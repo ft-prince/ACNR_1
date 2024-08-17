@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Media Slider</title>
+    <style>
+        .slide { display: none; }
+        .active { display: block; }
+        #pdf-canvas { width: 100%; height: auto; }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
+</head>
+<body>
+    <div id="slider">
+        {% for pdf in slider.upload_pdf.all %}
+            <div class="slide pdf-slide" data-duration="{{ pdf.pdf_duration }}">
+                <canvas id="pdf-canvas-{{ forloop.counter }}" class="pdf-canvas"></canvas>
+                <script>
+                    const url = "{{ pdf.pdf_file.url }}";
+                    const pdfCanvas = document.getElementById('pdf-canvas-{{ forloop.counter }}');
+                    const pdfContext = pdfCanvas.getContext('2d');
+                    
+                    pdfjsLib.getDocument(url).promise.then(pdfDoc => {
+                        pdfDoc.getPage(1).then(page => {
+                            const viewport = page.getViewport({ scale: 1 });
+                            pdfCanvas.height = viewport.height;
+                            pdfCanvas.width = viewport.width;
+                            const renderContext = { canvasContext: pdfContext, viewport: viewport };
+                            page.render(renderContext);
+                        });
+                    });
+                </script>
+            </div>
+        {% endfor %}
+        {% for video in slider.upload_video.all %}
+            <div class="slide video-slide" data-duration="{{ video.duration }}">
+                <video controls>
+                    <source src="{{ video.video_file.url }}" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+            </div>
+        {% endfor %}
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        function showSlide(index) {
+            slides.forEach(slide => slide.classList.remove('active'));
+            slides[index].classList.add('active');
+            const duration = slides[index].dataset.duration * 1000; // Convert to milliseconds
+            setTimeout(() => {
+                currentSlide = (currentSlide + 1) % slides.length;
+                showSlide(currentSlide);
+            }, duration);
+        }
+        showSlide(currentSlide);
+    </script>
+</body>
+</html>

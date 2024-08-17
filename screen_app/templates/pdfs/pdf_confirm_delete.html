@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete PDF{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Delete PDF</h1>
+<p>Are you sure you want to delete the PDF "{{ object.pdf_name }}"?</p>
+<form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Confirm Delete</button>
+    <a href="{% url 'pdf_list' %}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}

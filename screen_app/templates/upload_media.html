@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Upload Media</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container">
+        <h2>Upload Media Files</h2>
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <h4>Video Upload</h4>
+            {{ video_form.as_p }}
+
+            <h4>PDF Upload</h4>
+            {{ pdf_form.as_p }}
+
+            <h4>Image Upload</h4>
+            {{ image_form.as_p }}
+
+            <h4>Slider Setup</h4>
+            {{ slider_form.as_p }}
+
+            <button type="submit" class="btn btn-primary">Upload</button>
+        </form>
+    </div>
+</body>
+</html>

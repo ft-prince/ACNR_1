@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block title %}Production Plan List{% endblock %}
+
+{% block content %}
+<h1 class="text-3xl font-bold mb-6">Daily Production Plan List</h1>
+
+<div class="mb-4">
+    <a href="{% url 'add_production_plan' %}" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
+        Add New Plan
+    </a>
+</div>
+
+<div class="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+    <table class="w-full">
+        <thead>
+            <tr class="bg-gray-700">
+                <th class="p-3 text-left">Date</th>
+                <th class="p-3 text-left">Unit</th>
+                <th class="p-3 text-left">Assembly Line</th>
+                <th class="p-3 text-left">Planned</th>
+                <th class="p-3 text-left">Actual</th>
+                <th class="p-3 text-left">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for plan in plans %}
+            <tr class="border-t border-gray-700">
+                <td class="p-3">{{ plan.date }}</td>
+                <td class="p-3">{{ plan.unit.code }} - {{ plan.unit.model }}</td>
+                <td class="p-3">{{ plan.assembly_line.name }}</td>
+                <td class="p-3">{{ plan.qty_planned }}</td>
+                <td class="p-3">{{ plan.qty_actual }}</td>
+                <td class="p-3">
+                    <a href="{% url 'production_plan_detail' plan.pk %}" class="text-blue-400 hover:text-blue-300">View</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" class="p-3 text-center">No production plans found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if is_paginated %}
+<div class="mt-4">
+    <span class="step-links">
+        {% if page_obj.has_previous %}
+            <a href="?page=1" class="text-blue-400 hover:text-blue-300">&laquo; first</a>
+            <a href="?page={{ page_obj.previous_page_number }}" class="text-blue-400 hover:text-blue-300">previous</a>
+        {% endif %}
+
+        <span class="current">
+            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
+        </span>
+
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="text-blue-400 hover:text-blue-300">next</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}" class="text-blue-400 hover:text-blue-300">last &raquo;</a>
+        {% endif %}
+    </span>
+</div>
+{% endif %}
+{% endblock %}

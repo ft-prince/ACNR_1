@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<style>
+    .slider-container {
+        width: 100%;
+        height: 100vh; /* Full viewport height */
+        margin: 20px auto;
+        position: relative;
+    }
+    #videoCarousel {
+        width: 100%;
+        height: 100%; /* Full container height */
+    }
+    .carousel-item {
+        height: 100%; /* Full container height */
+    }
+    video {
+        object-fit: contain; /* Preserve aspect ratio */
+        width: 100%;
+        height: 100%;
+    }
+    .carousel-caption {
+        background-color: rgba(0, 0, 0, 0.5);
+        padding: 10px;
+        border-radius: 5px;
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        color: white;
+    }
+    .carousel-control-prev, .carousel-control-next {
+        width: 5%;
+    }
+</style>
+
+<div class="slider-container">
+    <div id="videoCarousel" class="carousel slide" data-ride="carousel" data-interval="false">
+        <div class="carousel-inner">
+            {% for video in videos %}
+                <div class="carousel-item {% if forloop.first %}active{% endif %}" data-duration="{{ video.video_duration }}">
+                    <video autoplay>
+                        <source src="{{ video.video_file.url }}" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                    <div class="carousel-caption d-none d-md-block">
+                        <h5>{{ video.video_name }}</h5>
+                        <p>Duration: {{ video.video_duration }} seconds</p>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="carousel-item active">
+                    <div class="d-flex align-items-center justify-content-center h-100">
+                        <p>No videos available for this screen.</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        <a class="carousel-control-prev" href="#videoCarousel" role="button" data-slide="prev">
+            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+            <span class="sr-only">Previous</span>
+        </a>
+        <a class="carousel-control-next" href="#videoCarousel" role="button" data-slide="next">
+            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+            <span class="sr-only">Next</span>
+        </a>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function() {
+        var carousel = $('#videoCarousel');
+        var duration = carousel.find('.carousel-item.active').data('duration') * 1000; // convert to milliseconds
+
+        // Function to play the current video
+        function playCurrentVideo() {
+            var video = carousel.find('.carousel-item.active video')[0];
+            if (video) {
+                video.currentTime = 0; // Start from the beginning
+                video.play();
+            }
+        }
+
+        // Function to advance carousel to the next item
+        function advanceCarousel() {
+            carousel.carousel('next');
+            duration = carousel.find('.carousel-item.active').data('duration') * 1000;
+            playCurrentVideo();
+            setTimeout(advanceCarousel, duration);
+        }
+
+        // Start playing the first video
+        playCurrentVideo();
+
+        // Set timeout for advancing to the next slide
+        setTimeout(advanceCarousel, duration);
+
+        // Reset video when manually changing slides
+        carousel.on('slid.bs.carousel', function () {
+            playCurrentVideo();
+        });
+
+        // Log video duration to console (for debugging)
+        carousel.find('video').on('loadedmetadata', function() {
+            console.log('Video duration:', this.duration);
+        });
+    });
+</script>
+{% endblock %}

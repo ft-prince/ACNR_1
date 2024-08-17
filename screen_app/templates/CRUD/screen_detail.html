@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block title %}Screen Detail{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Screen {{ screen.screen_id }}</h1>
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">Details</h5>
+        <p><strong>Manager:</strong> {{ screen.manager }}</p>
+        <p><strong>Product:</strong> {{ screen.product }}</p>
+        
+        <h5 class="mt-4">PDFs</h5>
+        <ul class="list-group">
+            {% for pdf in screen.upload_pdf.all %}
+            <li class="list-group-item">{{ pdf.pdf_name }} ({{ pdf.pdf_duration }} seconds)</li>
+            {% empty %}
+            <li class="list-group-item">No PDFs uploaded</li>
+            {% endfor %}
+        </ul>
+        
+        <h5 class="mt-4">Videos</h5>
+        <ul class="list-group">
+            {% for video in screen.upload_video.all %}
+            <li class="list-group-item">{{ video.video_name }} ({{ video.video_duration }} seconds)</li>
+            {% empty %}
+            <li class="list-group-item">No videos uploaded</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+<div class="mt-4">
+    <a href="{% url 'add_content_to_screen' screen.pk %}" class="btn btn-primary">Add Content</a>
+    <a href="{% url 'screen_update' screen.pk %}" class="btn btn-warning">Edit</a>
+    <a href="{% url 'screen_delete' screen.pk %}" class="btn btn-danger">Delete</a>
+    <a href="{% url 'screen_list' %}" class="btn btn-secondary">Back to List</a>
+</div>
+{% endblock %}

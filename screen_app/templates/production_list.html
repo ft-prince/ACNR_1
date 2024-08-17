@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Production List</title>
+    <style>
+        /* Copy the styles from your existing template */
+    </style>
+</head>
+<body>
+    <h1>Production List</h1>
+    <a href="{% url 'production_create' %}">Add New Production Plan</a>
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Assembly Line</th>
+                <th>Unit</th>
+                <th>Planned</th>
+                <th>Actual</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for plan in page_obj %}
+            <tr>
+                <td>{{ plan.date }}</td>
+                <td>{{ plan.assembly_line }}</td>
+                <td>{{ plan.unit }}</td>
+                <td>{{ plan.qty_planned }}</td>
+                <td>{{ plan.qty_actual }}</td>
+                <td class="{% if plan.status == 'Completed' %}status-completed{% elif plan.status == 'Pending' %}status-pending{% endif %}">
+                    {{ plan.status }}
+                </td>
+                <td>
+                    <a href="{% url 'production_detail' plan.pk %}">View</a>
+                    <a href="{% url 'production_update' plan.pk %}">Edit</a>
+                    <a href="{% url 'production_delete' plan.pk %}">Delete</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <div class="pagination">
+        <span class="step-links">
+            {% if page_obj.has_previous %}
+                <a href="?page=1">&laquo; first</a>
+                <a href="?page={{ page_obj.previous_page_number }}">previous</a>
+            {% endif %}
+
+            <span class="current">
+                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
+            </span>
+
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}">next</a>
+                <a href="?page={{ page_obj.paginator.num_pages }}">last &raquo;</a>
+            {% endif %}
+        </span>
+    </div>
+</body>
+</html>

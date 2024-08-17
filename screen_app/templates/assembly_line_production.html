@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Production Plan Vs Actual - {{ assembly_line }}</title>
+    <style>
+        body {
+            background-color: #1a202c;
+            color: #ffffff;
+            padding: 1rem;
+            font-family: Arial, sans-serif;
+        }
+        .large-text {
+            font-size: 3em;
+        }
+        .table-header {
+            font-size: 2.5rem;
+        }
+        .table-header2 {
+            font-size: 1.5rem;
+        }
+        .table-cell {
+            font-size: 2.5rem;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .font-bold {
+            font-weight: bold;
+        }
+        .bg-yellow-300 {
+            background-color: #f6e05e;
+            color: #1a202c;
+        }
+        .bg-gray-800 {
+            background-color: #2d3748;
+        }
+        .bg-gray-700 {
+            background-color: #4a5568;
+        }
+        .bg-red-200 {
+            background-color: #fed7d7;
+            color: #1a202c;
+        }
+        .border {
+            border: 1px solid #4a5568;
+        }
+        .mb-4 {
+            margin-bottom: 1rem;
+        }
+        .mt-2 {
+            margin-top: 0.5rem;
+        }
+        .p-2 {
+            padding: 0.5rem;
+        }
+        .py-2 {
+            padding-top: 0.5rem;
+            padding-bottom: 0.5rem;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #4a5568;
+            padding: 0.5rem;
+        }
+        .status-completed {
+            background-color: #68D391;
+            color: #1a202c;
+        }
+        .status-pending {
+            background-color: #FBD38D;
+            color: #1a202c;
+        }
+    </style>
+</head>
+<body>
+    <div class="text-center mb-4">
+        <img
+        src="https://github.com/ft-prince/slider/blob/main/image.png?raw=true"
+        alt="Trans ACNR Logo"
+            style="margin: 0 auto; width: 200px; height: 50px; aspect-ratio: 200 / 50; object-fit: cover;"
+        />
+        <h1 class="font-bold" style="font-size: 1.25rem;">Daily Production Plan Vs Actual LineWise </h1>
+    </div>
+    <div class="bg-yellow-300 text-center font-bold py-2">{{ assembly_line }}</div>
+    <table class="mt-2">
+        <thead>
+            <tr class="bg-gray-800">
+                <th>S. No.</th>
+                <th>Unit Code</th>
+                <th>Unit Model</th>
+                <th colspan="2" class="bg-yellow-300">{{ current_date|date:"d-M-y" }}</th>
+                <th>Remarks</th>
+            </tr>
+            <tr class="bg-gray-800">
+                <th></th>
+                <th></th>
+                <th></th>
+                <th class="bg-red-200">Qty. Planned</th>
+                <th class="bg-red-200">Qty. Actual</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for plan in plans %}
+            <tr class="bg-gray-700">
+                <td class="text-center">{{ plan.s_no }}</td>
+                <td class="text-center">{{ plan.unit.code }}</td>
+                <td>{{ plan.unit.model }}</td>
+                <td class="bg-red-200 text-center">{{ plan.qty_planned }}</td>
+                <td class="bg-red-200 text-center">{{ plan.qty_actual }}</td>
+                <td class="{% if plan.status == 'Completed' %}status-completed{% elif plan.status == 'Pending' %}status-pending{% endif %}">
+                    {{ plan.status }}
+                </td>
+            </tr>
+            {% endfor %}
+            <tr class="bg-gray-800 font-bold">
+                <td colspan="3" class="text-center">Total</td>
+                <td class="bg-red-200 text-center">{{ total_planned }}</td>
+                <td class="bg-red-200 text-center">{{ total_actual }}</td>
+                <td></td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+</html>

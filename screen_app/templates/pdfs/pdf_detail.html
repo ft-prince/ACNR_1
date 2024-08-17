@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block title %}PDF Detail{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">PDF: {{ object.pdf_name }}</h1>
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">Details</h5>
+        <p><strong>Name:</strong> {{ object.pdf_name }}</p>
+        <p><strong>Duration:</strong> {{ object.pdf_duration }} seconds</p>
+        <p><strong>Uploaded At:</strong> {{ object.uploaded_at|date:"Y-m-d H:i" }}</p>
+        <p><strong>File:</strong> <a href="{{ object.pdf_file.url }}" target="_blank">View PDF</a></p>
+    </div>
+</div>
+<div class="mt-4">
+    <a href="{% url 'pdf_update' object.pk %}" class="btn btn-warning">Edit</a>
+    <a href="{% url 'pdf_delete' object.pk %}" class="btn btn-danger">Delete</a>
+    <a href="{% url 'pdf_list' %}" class="btn btn-secondary">Back to List</a>
+</div>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if form.instance.pk %}Edit{% else %}Create{% endif %} Screen{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">{% if form.instance.pk %}Edit{% else %}Create{% endif %} Screen</h1>
+<form method="post">
+    {% csrf_token %}
+    <div class="mb-3">
+        <label for="{{ form.manager.id_for_label }}" class="form-label">Manager</label>
+        {{ form.manager }}
+    </div>
+    <div class="mb-3">
+        <label for="{{ form.product.id_for_label }}" class="form-label">Product</label>
+        {{ form.product }}
+    </div>
+    <div class="mb-3">
+        <label for="{{ form.upload_pdf.id_for_label }}" class="form-label">PDFs</label>
+        {{ form.upload_pdf }}
+    </div>
+    <div class="mb-3">
+        <label for="{{ form.upload_video.id_for_label }}" class="form-label">Videos</label>
+        {{ form.upload_video }}
+    </div>
+    <button type="submit" class="btn btn-primary">Save</button>
+    <a href="{% url 'screen_list' %}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}

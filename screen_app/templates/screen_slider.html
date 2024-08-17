@@ -1,0 +1,76 @@
+<!-- screen_slider.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Screen Slider</title>
+    <style>
+        .slider-container {
+            position: relative;
+            max-width: 100%;
+            margin: auto;
+        }
+
+        .slide {
+            display: none;
+            width: 100%;
+        }
+
+        .active {
+            display: block;
+        }
+
+        img, video {
+            width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+
+<div class="slider-container">
+    {% for media in media_files %}
+        <div class="slide">
+            {% if media.type == 'image' %}
+                <img src="{{ media.file_url }}" alt="{{ media.name }}">
+            {% elif media.type == 'video' %}
+                <video src="{{ media.file_url }}" muted autoplay></video>
+                {% comment %} <p>{{ media.file_url }}</p>  {% endcomment %}
+
+            {% endif %}
+        </div>
+    {% endfor %}
+</div>
+
+<script>
+    let currentIndex = 0;
+    const slides = document.querySelectorAll('.slide');
+    const durations = [
+        {% for media in media_files %}
+            {{ media.duration }}000, // converting seconds to milliseconds
+        {% endfor %}
+    ];
+
+    function showSlide(index) {
+        slides.forEach((slide, i) => {
+            slide.classList.remove('active');
+            if (i === index) {
+                slide.classList.add('active');
+            }
+        });
+    }
+
+    function nextSlide() {
+        showSlide(currentIndex);
+        currentIndex = (currentIndex + 1) % slides.length;
+        setTimeout(nextSlide, durations[currentIndex]);
+    }
+
+    // Start the slider
+    setTimeout(nextSlide, durations[currentIndex]);
+
+</script>
+
+</body>
+</html>

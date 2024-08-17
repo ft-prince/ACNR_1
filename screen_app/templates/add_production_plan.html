@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Production Plan{% endblock %}
+
+{% block content %}
+<h1 class="text-3xl font-bold mb-6">Add Production Plan</h1>
+
+<form method="post" class="bg-gray-800 rounded-lg shadow-lg overflow-hidden p-6">
+    {% csrf_token %}
+    {% for field in form %}
+    <div class="mb-4">
+        <label for="{{ field.id_for_label }}" class="block text-sm font-bold mb-2">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}
+        <p class="text-red-500 text-xs italic">{{ field.errors.0 }}</p>
+        {% endif %}
+    </div>
+    {% endfor %}
+    <div class="flex items-center justify-between">
+        <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+            Add Plan
+        </button>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    $('.select2').select2({
+        theme: 'classic',
+        width: '100%'
+    });
+
+    $('#id_unit').select2({
+        ajax: {
+            url: '{% url "search_units" %}',
+            dataType: 'json',
+            delay: 250,
+            data: function (params) {
+                return {
+                    query: params.term
+                };
+            },
+            processResults: function (data) {
+                return {
+                    results: data.results
+                };
+            },
+            cache: true
+        },
+        minimumInputLength: 2,
+        placeholder: 'Search for a unit',
+    });
+});
+</script>
+{% endblock %}
