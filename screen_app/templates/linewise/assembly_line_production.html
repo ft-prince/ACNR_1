@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Production Plan Vs Actual LineWise</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+        }
+        body {
+            background-color: #0866FF;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+        }
+        .table-header2 { font-size: 2.5vw; }
+        .table-cell { font-size: 3.7vw; }
+        .bg-gray-200 { background-color: #36498f; }
+        .bg-red-200 { background-color: #242444; }
+        .table-container {
+            height: calc(100vh - 60px);
+            overflow: hidden;
+            position: relative;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 1vh 1vw;
+            text-align: center;
+            border: 1px solid #cbd5e0;
+        }
+        thead {
+            position: sticky;
+            top: 0;
+            background-color: #36498f;
+            z-index: 1;
+        }
+        .text-center { text-align: center; }
+        .text-start { text-align: start; }
+        .font-bold { font-weight: bold; }
+        .status-completed { background-color: #4CAF50; color: white; }
+        .status-inprogress { background-color: #FFEB3B; color: black; }
+        .status-pending { background-color: #FF0000; color: white; }
+        .header-container {
+            width: 100%;
+            padding: 10px;
+        }
+        .text-center.table-header2 {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            margin: 0;
+        }
+        .header-item {
+            padding: 1vh 1vw;
+            font-size: 2.9vw;
+            background-color: #242444;
+        }
+        .header-item:first-child { margin-right: auto; }
+        .header-item:last-child { margin-left: auto; }
+        .header-item:nth-child(2) {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+    </style>
+</head>
+<body>
+    <div class="header-container">
+        <h1 class="text-center table-header2">
+            <span class="header-item bg-red-200" id="assemblyLine">{{ assembly_line }}</span>
+            <span class="header-item bg-red-200">Daily Prod. Plan Vs Actual</span>
+            <span class="header-item bg-red-200" id="currentDate">{{ current_date }}</span>
+        </h1>
+    </div>
+    <div class="table-container" id="tableContainer">
+        <table>
+            <thead>
+                <tr class="bg-red-200">
+                    <th class="table-header2">SN</th>
+                    <th class="table-header2">Unit Code</th>
+                    <th class="table-header2 text-start">Unit Model</th>
+                    <th class="table-header2 bg-red-200">Qty Plan</th>
+                    <th class="table-header2 bg-red-200">Qty Act</th>
+                    <th class="table-header2">Remarks</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                {% for plan in plans %}
+                <tr>
+                    <td class="table-cell text-center">{{ forloop.counter }}</td>
+                    <td class="table-cell text-center">{{ plan.unit.code }}</td>
+                    <td class="table-cell text-start">{{ plan.unit.model }}</td>
+                    <td class="table-cell bg-red-200 text-center font-bold">{{ plan.qty_planned }}</td>
+                    <td class="table-cell bg-red-200 text-center font-bold">{{ plan.qty_actual }}</td>
+                    <td class="table-cell 
+                    {% if plan.status == 'Completed' %}status-completed
+                    {% elif plan.status == 'In-Prog.' %}status-inprogress
+                    {% elif plan.status == 'Pending' %}status-pending
+                    {% endif %}">
+                    {{ plan.status }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        function hardRefresh() {
+            location.reload(true);
+        }
+
+        // Automatically refresh the page every 1 minute (60,000 milliseconds)
+        setInterval(hardRefresh, 60000); // 60000 milliseconds = 1 minute
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const refreshInterval = 30000; // Refresh every 30 seconds
+            const url = window.location.href;
+
+            function fetchData() {
+                fetch(`${url}?date=today`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Update header
+                    document.getElementById('assemblyLine').textContent = data.assembly_line;
+                    document.getElementById('currentDate').textContent = data.current_date;
+
+                    // Update table
+                    const tableBody = document.getElementById('tableBody');
+                    tableBody.innerHTML = ''; // Clear existing rows
+                    data.plans.forEach((plan, index) => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td class="table-cell text-center">${index + 1}</td>
+                            <td class="table-cell text-center">${plan.unit.code}</td>
+                            <td class="table-cell text-start">${plan.unit.model}</td>
+                            <td class="table-cell bg-red-200 text-center font-bold">${plan.qty_planned}</td>
+                            <td class="table-cell bg-red-200 text-center font-bold">${plan.qty_actual}</td>
+                            <td class="table-cell ${plan.status === 'Completed' ? 'status-completed' : plan.status === 'In Progress' ? 'status-inprogress' : 'status-pending'}">${plan.status}</td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                })
+                .catch(error => console.error('Error fetching data:', error));
+            }
+
+            fetchData(); // Initial fetch
+            setInterval(fetchData, refreshInterval); // Refresh data periodically
+
+            // Existing scroll handling code
+            const tableContainer = document.getElementById('tableContainer');
+            let scrollPosition = 0;
+            let scrollSpeed = 1;
+            let scrollDirection = 1; // 1 for down, -1 for up
+            let isPaused = false;
+
+            function scrollTable() {
+                if (!isPaused) {
+                    scrollPosition += scrollSpeed * scrollDirection;
+                    tableContainer.scrollTop = scrollPosition;
+
+                    const maxScroll = tableContainer.scrollHeight - tableContainer.clientHeight;
+
+                    if (scrollPosition >= maxScroll || scrollPosition <= 0) {
+                        isPaused = true;
+                        setTimeout(() => {
+                            isPaused = false;
+                            if (scrollPosition >= maxScroll) {
+                                scrollDirection = -1; // Change direction to up
+                            } else if (scrollPosition <= 0) {
+                                scrollDirection = 1; // Change direction to down
+                            }
+                        }, 2000); // 2 second pause
+                    }
+                }
+
+                requestAnimationFrame(scrollTable);
+            }
+
+            scrollTable();
+
+            tableContainer.addEventListener('mouseenter', function() {
+                scrollSpeed = 0;
+            });
+
+            tableContainer.addEventListener('mouseleave', function() {
+                scrollSpeed = 1;
+            });
+        });
+    </script>
+</body>
+</html>

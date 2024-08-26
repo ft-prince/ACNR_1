@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}Production Plan Detail{% endblock %}
+
+{% block content %}
+<h1 class="text-3xl font-bold mb-6">Production Plan Detail</h1>
+
+<div class="bg-gray-800 rounded-lg shadow-lg overflow-hidden p-6">
+    <dl class="grid grid-cols-2 gap-4">
+        <div>
+            <dt class="font-bold text-gray-400">Date:</dt>
+            <dd>{{ plan.date }}</dd>
+        </div>
+        <div>
+            <dt class="font-bold text-gray-400">Unit:</dt>
+            <dd>{{ plan.unit.code }} - {{ plan.unit.model }}</dd>
+        </div>
+        <div>
+            <dt class="font-bold text-gray-400">Assembly Line:</dt>
+            <dd>{{ plan.assembly_line.name }}</dd>
+        </div>
+        <div>
+            <dt class="font-bold text-gray-400">Quantity Planned:</dt>
+            <dd>{{ plan.qty_planned }}</dd>
+        </div>
+        <div>
+            <dt class="font-bold text-gray-400">Quantity Actual:</dt>
+            <dd>{{ plan.qty_actual }}</dd>
+        </div>
+        <div>
+            <dt class="font-bold text-gray-400">Remarks:</dt>
+            <dd>{{ plan.remarks|default:"N/A" }}</dd>
+        </div>
+    </dl>
+</div>
+
+<div class="mt-6">
+    <a href="{% url 'production_plan_list_linewise' %}" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
+        Back to List
+    </a>
+</div>
+{% endblock %}

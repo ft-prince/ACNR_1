@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block title %}Weekly Production Plan List{% endblock %}
+
+{% block content %}
+<h1 class="text-3xl font-bold mb-6 text-white">Weekly Production Plan List</h1>
+
+<div class="mb-4 flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
+    <a href="{% url 'add_weekly_production_plan' %}" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
+        Add New Weekly Plan
+    </a>
+
+    {% comment %} <!-- Export buttons -->
+    <a href="{% url 'export_weekly_plan_pdf' week_id=week.id %}">Export PDF</a>
+
+    <a href="{% url 'export_weekly_plan_to_excel' %}?month={{ request.GET.month }}" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded">
+        Export to Excel
+    </a> {% endcomment %}
+
+    <form method="get" class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+        <input type="month" name="month" value="{{ current_month }}" 
+               class="bg-gray-700 text-white border border-gray-600 rounded px-2 py-1 focus:outline-none focus:border-blue-500">
+        <button type="submit" class="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-4 rounded">
+            Filter
+        </button>
+        <a href="{% url 'weekly_production_plan_list' %}" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-1 px-4 rounded">
+            Reset
+        </a>
+    </form>
+</div>
+
+<div class="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+    <table class="w-full">
+        <thead>
+            <tr class="bg-gray-700">
+                <th class="p-3 text-left text-white">Start Date</th>
+                <th class="p-3 text-left text-white">Month</th>
+                <th class="p-3 text-left text-white">Add </th>
+                
+                <th class="p-3 text-left text-white">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for plan in plans %}
+            <tr class="border-t border-gray-700">
+                <td class="p-3 text-white">{{ plan.start_date|date:"d-m-Y" }}</td>
+                <td class="p-3 text-white">{{ plan.month }}</td>
+                <td class="p-3 text-white">
+
+                    <a href="{%url 'add_weekly_daily_plan' %} "class="text-blue-400 hover:text-blue-300">Add</a>
+                </td>
+
+                <td class="p-3">
+                    <a href="{% url 'weekly_production_plan_detail' plan.pk %}" class="text-blue-400 hover:text-blue-300">View</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="3" class="p-3 text-center text-white">No weekly production plans found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if is_paginated %}
+<div class="mt-4">
+    <span class="step-links text-white">
+        {% if page_obj.has_previous %}
+            <a href="?page=1{% if request.GET.month %}&month={{ request.GET.month }}{% endif %}" class="text-blue-400 hover:text-blue-300">&laquo; first</a>
+            <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.month %}&month={{ request.GET.month }}{% endif %}" class="text-blue-400 hover:text-blue-300">previous</a>
+        {% endif %}
+
+        <span class="current">
+            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
+        </span>
+
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% if request.GET.month %}&month={{ request.GET.month }}{% endif %}" class="text-blue-400 hover:text-blue-300">next</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.month %}&month={{ request.GET.month }}{% endif %}" class="text-blue-400 hover:text-blue-300">last &raquo;</a>
+        {% endif %}
+    </span>
+</div>
+{% endif %}
+
+{% endblock %}

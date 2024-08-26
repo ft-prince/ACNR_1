@@ -8,7 +8,7 @@ admin.site.register(Screen)
 admin.site.register(VideoFile)
 admin.site.register(PDFFile)
 from .models import Images
-
+from .form_models import WeeklyProductionPlan,DailyPlan
 class ImagesAdmin(admin.ModelAdmin):
     list_display = ('image_name', 'uploaded_at')
     search_fields = ('image_name',)
@@ -16,6 +16,8 @@ class ImagesAdmin(admin.ModelAdmin):
     readonly_fields = ('uploaded_at',)
 
 admin.site.register(Images, ImagesAdmin)
+admin.site.register(WeeklyProductionPlan)
+admin.site.register(DailyPlan)
 
 
 

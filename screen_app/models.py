@@ -92,11 +92,12 @@ class AssemblyLine(models.Model):
 # Daily Production Plan Vs Actual
 class DailyProductionPlan(models.Model):
     s_no = models.AutoField(primary_key=True)
-    date = models.DateField(auto_now_add=True)
+    # date = models.DateField(auto_now_add=True)
+    date = models.DateField(default=timezone.now)
     assembly_line = models.ForeignKey(AssemblyLine, on_delete=models.PROTECT)
     unit = models.ForeignKey(Unit, on_delete=models.PROTECT)
     qty_planned = models.IntegerField()
-    qty_actual = models.IntegerField()
+    qty_actual = models.IntegerField(default=0,blank=True)
     remarks = models.TextField(blank=True, null=True)
 
     def __str__(self):
@@ -112,62 +113,72 @@ class DailyProductionPlan(models.Model):
 # Daily Production Plan Vs Actual 
 class ProductionPlan(models.Model):
     s_no = models.AutoField(primary_key=True)    
-    date = models.DateField(auto_now_add=True)
+    # date = models.DateField(auto_now_add=True)
+    date = models.DateField(default=timezone.now)
+    assembly_line = models.ForeignKey(AssemblyLine, on_delete=models.PROTECT)
     unit = models.ForeignKey(Unit, on_delete=models.PROTECT)
     qty_planned = models.IntegerField()
-    qty_actual = models.IntegerField()
+    qty_actual = models.IntegerField(default=0,blank=True)
     remarks = models.TextField(blank=True, null=True)
-
     def __str__(self):
         return f"{self.date} - {self.unit.model}"
-
     class Meta:
         verbose_name = "Daily Production Plan Vs Actual LineWise"
         verbose_name_plural = "Daily Production Plan Vs Actual Total LineWise"        
 
 
 
-from django.shortcuts import render, get_object_or_404, redirect
-from django.db.models import Sum, F
-from .models import DailyProductionPlan, AssemblyLine, Unit
-from .forms import DailyProductionPlanForm
-from django.core.paginator import Paginator
+# ----------------------------------------------------------------------------------------
 
-def production_list(request):
-    plans = DailyProductionPlan.objects.all().order_by('-date', 'assembly_line', 's_no')
-    paginator = Paginator(plans, 10)  # Show 10 items per page
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    return render(request, 'production_list.html', {'page_obj': page_obj})
 
-def production_detail(request, pk):
-    plan = get_object_or_404(DailyProductionPlan, pk=pk)
-    return render(request, 'production_detail.html', {'plan': plan})
 
-def production_create(request):
-    if request.method == 'POST':
-        form = DailyProductionPlanForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('production_list')
-    else:
-        form = DailyProductionPlanForm()
-    return render(request, 'production_form.html', {'form': form})
+# -------------------------------------------------------
 
-def production_update(request, pk):
-    plan = get_object_or_404(DailyProductionPlan, pk=pk)
-    if request.method == 'POST':
-        form = DailyProductionPlanForm(request.POST, instance=plan)
-        if form.is_valid():
-            form.save()
-            return redirect('production_list')
-    else:
-        form = DailyProductionPlanForm(instance=plan)
-    return render(request, 'production_form.html', {'form': form})
 
-def production_delete(request, pk):
-    plan = get_object_or_404(DailyProductionPlan, pk=pk)
-    if request.method == 'POST':
-        plan.delete()
-        return redirect('production_list')
-    return render(request, 'production_confirm_delete.html', {'plan': plan})
+# class RollingWeeklyProductionPlan(models.Model):
+#     unit = models.ForeignKey(Unit, on_delete=models.CASCADE)
+#     start_date = models.DateField()
+#     qty_planned_day_1 = models.IntegerField(blank=True, null=True)  # 25-Jul-24
+#     qty_planned_day_2 = models.IntegerField(blank=True, null=True)  # 26-Jul-24
+#     qty_planned_day_3 = models.IntegerField(blank=True, null=True)  # 27-Jul-24
+#     qty_planned_day_4 = models.IntegerField(blank=True, null=True)  # 29-Jul-24
+#     qty_planned_day_5 = models.IntegerField(blank=True, null=True)  # 30-Jul-24
+#     qty_planned_day_6 = models.IntegerField(blank=True, null=True)  # 31-Jul-24
+#     remarks = models.TextField(blank=True, null=True)
+
+#     def __str__(self):
+#         return f"Plan for {self.unit.unit_code} starting {self.start_date}"
+
+
+
+
+# from django.db import models
+# from django.utils import timezone
+
+# class WeeklyPlan(models.Model):
+#     unit = models.ForeignKey(Unit, on_delete=models.PROTECT)
+#     week_start_date = models.DateField()
+#     serial_number = models.IntegerField()
+#     remarks = models.TextField(blank=True, null=True)
+
+#     def __str__(self):
+#         return f"Plan for {self.unit} - Week of {self.week_start_date}"
+
+#     class Meta:
+#         unique_together = ['unit', 'week_start_date', 'serial_number']
+
+# class DailyPlan(models.Model):
+#     weekly_plan = models.ForeignKey(WeeklyPlan, on_delete=models.CASCADE, related_name='daily_plans')
+#     date = models.DateField()
+#     field1 = models.IntegerField()
+#     field2 = models.IntegerField()
+#     field3 = models.IntegerField()
+#     field4 = models.IntegerField()
+#     field5 = models.IntegerField()
+#     field6 = models.IntegerField()
+
+#     def __str__(self):
+#         return f"Plan for {self.weekly_plan.unit} on {self.date}"
+
+#     class Meta:
+#         unique_together = ['weekly_plan', 'date']

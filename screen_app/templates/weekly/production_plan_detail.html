@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+
+{% block title %}Weekly Production Plan Detail{% endblock %}
+
+{% block content %}
+<h1 class="text-3xl font-bold mb-6 text-white">Weekly Production Plan Detail</h1>
+
+<div class="bg-gray-800 rounded-lg shadow-lg overflow-hidden p-6">
+    <dl class="grid grid-cols-2 gap-4">
+        <div>
+            <dt class="font-bold text-gray-400">Start Date:</dt>
+            <dd class="text-white">{{ plan.start_date|date:"d-m-Y" }}</dd>
+        </div>
+        <div>
+
+
+            <dt class="font-bold text-gray-400">Month:</dt>
+            <dd class="text-white">{{ plan.month }}</dd>
+        </div>
+    </dl>
+</div>
+
+<div class="mb-4 flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
+    <a href="{% url 'add_weekly_daily_plan' %}" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
+        Add New Plan
+    </a>
+<!-- Example HTML with a link to export PDF -->
+<a href="{% url 'export_weekly_plan_pdf' week_id=plan.id %}" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
+    Export Weekly Plan as PDF
+</a>
+<a href="{% url 'export_weekly_plan_to_excel' week_id=plan.id %}" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
+    Export Weekly Plan as Excel
+</a>
+
+</div>
+
+<h2 class="text-2xl font-bold mt-8 mb-4 text-white">Daily Plans</h2>
+
+<div class="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+    <table class="w-full">
+        <thead>
+            <tr class="bg-gray-700">
+                <th class="p-3 text-left text-white">Date</th>
+                <th class="p-3 text-left text-white">Unit</th>
+                <th class="p-3 text-left text-white">Quantity</th>
+                <th class="p-3 text-left text-white">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for daily_plan in daily_plans %}
+            <tr class="border-t border-gray-700">
+                <td class="p-3 text-white">{{ daily_plan.date|date:"d-m-Y" }}</td>
+                <td class="p-3 text-white">{{ daily_plan.unit.code }} - {{ daily_plan.unit.model }}</td>
+                <td class="p-3 text-white">
+                    <input type="number" 
+                           class="actual-input bg-gray-700 text-white border border-gray-600 rounded px-2 py-1" 
+                           data-plan-id="{{ daily_plan.id }}" 
+                           value="{{ daily_plan.quantity|default_if_none:'0' }}"
+                           min="0">
+                </td>
+                <td class="p-3">
+                    <a href="#" class="text-blue-400 hover:text-blue-300">Edit</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" class="p-3 text-center text-white">No daily plans found for this week.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        
+    </table>
+</div>
+
+<div class="mt-6">
+    <a href="{% url 'weekly_production_plan_list' %}" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
+        Back to List
+    </a>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.actual-input').forEach(input => {
+        input.addEventListener('change', function() {
+            const planId = this.getAttribute('data-plan-id');
+            const newValue = this.value;
+
+            fetch(`/screen/weekly/plan/update/${planId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({ quantity: newValue })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // Optional: Show success message or update the UI
+                } else {
+                    console.error("Update failed:", data.error);
+                    alert("Update failed: " + (data.error || "Unknown error"));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert("An error occurred while updating. Please try again.");
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

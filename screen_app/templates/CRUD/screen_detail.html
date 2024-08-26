@@ -1,38 +1,57 @@
 {% extends 'base.html' %}
 
+{% load static %}  <!-- Load static if needed -->
+
 {% block title %}Screen Detail{% endblock %}
 
 {% block content %}
-<h1 class="mb-4">Screen {{ screen.screen_id }}</h1>
-<div class="card">
-    <div class="card-body">
-        <h5 class="card-title">Details</h5>
-        <p><strong>Manager:</strong> {{ screen.manager }}</p>
-        <p><strong>Product:</strong> {{ screen.product }}</p>
-        
-        <h5 class="mt-4">PDFs</h5>
-        <ul class="list-group">
-            {% for pdf in screen.upload_pdf.all %}
-            <li class="list-group-item">{{ pdf.pdf_name }} ({{ pdf.pdf_duration }} seconds)</li>
-            {% empty %}
-            <li class="list-group-item">No PDFs uploaded</li>
-            {% endfor %}
-        </ul>
-        
-        <h5 class="mt-4">Videos</h5>
-        <ul class="list-group">
-            {% for video in screen.upload_video.all %}
-            <li class="list-group-item">{{ video.video_name }} ({{ video.video_duration }} seconds)</li>
-            {% empty %}
-            <li class="list-group-item">No videos uploaded</li>
-            {% endfor %}
-        </ul>
+<div class="max-w-full mx-auto mt-8">
+    <h1 class="text-4xl font-bold text-center text-white mb-8">Screen {{ screen.screen_id }} by {{ screen.manager }}</h1>
+
+    <div class="bg-gray-900 p-6 rounded-lg shadow-lg">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+         
+
+            <!-- Images Section -->
+            <div class="bg-gray-800 p-4 rounded-lg">
+                <h2 class="text-xl font-semibold text-white mb-4 text-center">Images</h2>
+                <div class="space-y-4">
+                    {% for image in screen.upload_images.all %}
+                    <div class="text-white">
+                        <p>{{ image.image_name }} ({{ image.image_duration }} seconds)</p>
+                        <img src="{{ image.image_file.url }}" alt="{{ image.image_name }}" class="w-full h-48 object-cover rounded-lg">
+                    </div>
+                    {% empty %}
+                    <p class="text-white text-center">No Images uploaded</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Videos Section -->
+            <div class="bg-gray-800 p-4 rounded-lg">
+                <h2 class="text-xl font-semibold text-white mb-4 text-center">Videos</h2>
+                <div class="space-y-4">
+                    {% for video in screen.upload_video.all %}
+                    <div class="text-white">
+                        <p>{{ video.video_name }} ({{ video.video_duration }} seconds)</p>
+                        <video controls class="w-full h-full rounded-lg">
+                            <source src="{{ video.video_file.url }}" type="video/mp4">
+                            Your browser does not support the video tag.
+                        </video>
+                    </div>
+                    {% empty %}
+                    <p class="text-white text-center">No Videos uploaded</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
     </div>
-</div>
-<div class="mt-4">
-    <a href="{% url 'add_content_to_screen' screen.pk %}" class="btn btn-primary">Add Content</a>
-    <a href="{% url 'screen_update' screen.pk %}" class="btn btn-warning">Edit</a>
-    <a href="{% url 'screen_delete' screen.pk %}" class="btn btn-danger">Delete</a>
-    <a href="{% url 'screen_list' %}" class="btn btn-secondary">Back to List</a>
+
+    <div class="mt-8 flex justify-center space-x-4 mb-8">
+        <a href="{% url 'add_content_to_screen' screen.pk %}" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg">Add Content</a>
+        <a href="{% url 'screen_update' screen.pk %}" class="bg-yellow-500 hover:bg-yellow-600 text-white py-2 px-4 rounded-lg">Edit</a>
+        <a href="{% url 'screen_delete' screen.pk %}" class="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg">Delete</a>
+        <a href="{% url 'screen_list' %}" class="bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg">Back to List</a>
+    </div>
 </div>
 {% endblock %}
