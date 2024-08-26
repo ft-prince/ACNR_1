@@ -26,6 +26,7 @@ urlpatterns = [
     path('screens/<int:pk>/update/', views.ScreenUpdateView.as_view(), name='screen_update'),
     path('screens/<int:pk>/delete/', views.ScreenDeleteView.as_view(), name='screen_delete'),
     path('screens/<int:screen_id>/add_content/', views.add_content_to_screen, name='add_content_to_screen'),
+   path('delete-media/<str:type>/<int:id>/', views.delete_media, name='delete_media'),
     # path('pdfs/', views.PDFFileListView.as_view(), name='pdf_list'),
     # path('pdfs/<int:pk>/', views.PDFFileDetailView.as_view(), name='pdf_detail'),
     # path('pdfs/create/', views.PDFFileCreateView.as_view(), name='pdf_create'),

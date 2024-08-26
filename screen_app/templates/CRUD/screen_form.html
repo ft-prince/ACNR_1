@@ -3,26 +3,72 @@
 {% block title %}{% if form.instance.pk %}Edit{% else %}Create{% endif %} Screen{% endblock %}
 
 {% block content %}
-<h1 class="mb-4">{% if form.instance.pk %}Edit{% else %}Create{% endif %} Screen</h1>
-<form method="post">
-    {% csrf_token %}
-    <div class="mb-3">
-        <label for="{{ form.manager.id_for_label }}" class="form-label">Manager</label>
-        {{ form.manager }}
-    </div>
-    <div class="mb-3">
-        <label for="{{ form.product.id_for_label }}" class="form-label">Product</label>
-        {{ form.product }}
-    </div>
-    <div class="mb-3">
-        <label for="{{ form.upload_pdf.id_for_label }}" class="form-label">PDFs</label>
-        {{ form.upload_pdf }}
-    </div>
-    <div class="mb-3">
-        <label for="{{ form.upload_video.id_for_label }}" class="form-label">Videos</label>
-        {{ form.upload_video }}
-    </div>
-    <button type="submit" class="btn btn-primary">Save</button>
-    <a href="{% url 'screen_list' %}" class="btn btn-secondary">Cancel</a>
-</form>
+<div class="max-w-4xl mx-auto p-8 bg-gray-800 rounded-lg shadow-lg">
+    <h1 class="text-3xl font-bold text-center text-white mb-8">{% if form.instance.pk %}Edit{% else %}Create{% endif %} Screen</h1>
+    
+    <form method="post" enctype="multipart/form-data" class="space-y-6">
+        {% csrf_token %}
+        
+        <!-- Manager Field -->
+        <div>
+            <label for="{{ form.manager.id_for_label }}" class="block text-sm font-medium text-gray-300">Manager</label>
+            <div class="mt-1">
+                {{ form.manager }}
+            </div>
+        </div>
+
+        <!-- Product Field -->
+        <div>
+            <label for="{{ form.product.id_for_label }}" class="block text-sm font-medium text-gray-300">Product</label>
+            <div class="mt-1">
+                {{ form.product }}
+            </div>
+        </div>
+
+        <!-- Images Section -->
+        <div>
+            <label for="{{ form.upload_images.id_for_label }}" class="block text-sm font-medium text-gray-300">Images</label>
+            <div class="mt-1">
+                {{ form.upload_images }}
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                {% for image in form.instance.upload_images.all %}
+                <div class="bg-gray-900 p-4 rounded-lg shadow-lg">
+                    <p class="text-sm text-gray-400">{{ image.name }}</p>
+                    <img src="{{ image.image_file.url }}" alt="{{ image.name }}" class="w-full h-48 object-cover rounded-lg mt-2">
+                </div>
+                {% empty %}
+                <p class="text-gray-400">No Images uploaded</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Videos Section -->
+        <div>
+            <label for="{{ form.upload_video.id_for_label }}" class="block text-sm font-medium text-gray-300">Videos</label>
+            <div class="mt-1">
+                {{ form.upload_video }}
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                {% for video in form.instance.upload_video.all %}
+                <div class="bg-gray-900 p-4 rounded-lg shadow-lg">
+                    <p class="text-sm text-gray-400">{{ video.name }}</p>
+                    <video controls class="w-full h-48 rounded-lg mt-2">
+                        <source src="{{ video.video_file.url }}" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                </div>
+                {% empty %}
+                <p class="text-gray-400">No Videos uploaded</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex justify-between">
+            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg">Save</button>
+            <a href="{% url 'screen_list' %}" class="bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg">Cancel</a>
+        </div>
+    </form>
+</div>
 {% endblock %}

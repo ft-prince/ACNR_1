@@ -4,10 +4,11 @@ from .models import Screen, PDFFile, VideoFile
 class ScreenForm(forms.ModelForm):
     class Meta:
         model = Screen
-        fields = ['manager', 'product', 'upload_pdf', 'upload_video']
+        fields = ['manager', 'product', 'upload_pdf', 'upload_video','upload_images']
         widgets = {
             'upload_pdf': forms.CheckboxSelectMultiple(),
             'upload_video': forms.CheckboxSelectMultiple(),
+            'upload_images': forms.CheckboxSelectMultiple(),
         }
 
 class PDFFileForm(forms.ModelForm):

@@ -152,7 +152,38 @@ class VideoFileDeleteView(DeleteView):
     template_name = 'videos/video_confirm_delete.html'
     success_url = reverse_lazy('video_list')
 
+# --------------------------------------------------------------
 
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.contrib.admin.views.decorators import staff_member_required
+from .models import Screen, VideoFile, Images  # Import your actual model names
+
+@staff_member_required
+@require_POST
+def delete_media(request, type, id):
+    try:
+        if type == 'video':
+            media = VideoFile.objects.get(id=id)
+            screen = Screen.objects.filter(upload_video=media).first()
+            if screen:
+                screen.upload_video.remove(media)
+            media.delete()
+        elif type == 'image':
+            media = Images.objects.get(id=id)
+            screen = Screen.objects.filter(upload_images=media).first()
+            if screen:
+                screen.upload_images.remove(media)
+            media.delete()
+        else:
+            return JsonResponse({'success': False, 'error': 'Invalid media type'})
+        
+        return JsonResponse({'success': True})
+    except (VideoFile.DoesNotExist, Images.DoesNotExist):
+        return JsonResponse({'success': False, 'error': 'Media not found'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+    
 #  sliders
 
 def screen_slider(request, screen_id):
