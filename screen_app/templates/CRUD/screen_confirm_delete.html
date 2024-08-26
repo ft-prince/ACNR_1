@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+{% block title %}Confirm Delete{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto mt-8 p-6 bg-gray-800 rounded-lg shadow-lg">
+    <h1 class="text-2xl font-bold text-white mb-4">Confirm Delete</h1>
+    <p class="text-gray-300 mb-6">Are you sure you want to delete the screen <strong>{{ screen.screen_id }}</strong> managed by <strong>{{ screen.manager }}</strong>?</p>
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="flex justify-end space-x-4">
+            <button type="submit" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg">Delete</button>
+            <a href="{% url 'screen_list' %}" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -4,9 +4,8 @@ from .models import Screen, PDFFile, VideoFile
 class ScreenForm(forms.ModelForm):
     class Meta:
         model = Screen
-        fields = ['manager', 'product', 'upload_pdf', 'upload_video','upload_images']
+        fields = ['manager', 'product', 'upload_video','upload_images']
         widgets = {
-            'upload_pdf': forms.CheckboxSelectMultiple(),
             'upload_video': forms.CheckboxSelectMultiple(),
             'upload_images': forms.CheckboxSelectMultiple(),
         }
@@ -86,6 +85,10 @@ class ImageForm(forms.ModelForm):
             'image_name': forms.TextInput(attrs={'class': 'form-control'}),
             'image_duration': forms.NumberInput(attrs={'class': 'form-control'}),
         }
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['image_file'].required = True
+        self.fields['image_duration'].required = True
 
 
 

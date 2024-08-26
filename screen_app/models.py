@@ -65,7 +65,7 @@ class Screen(models.Model):
     screen_id = models.AutoField(primary_key=True)
     manager = models.ForeignKey(User, on_delete=models.CASCADE, blank=True)
     product = models.ForeignKey(Product, on_delete=models.CASCADE,blank=True,default='Trans ACNR')
-    upload_pdf = models.ManyToManyField(PDFFile, blank=True)
+    # upload_pdf = models.ManyToManyField(PDFFile, blank=True)
     upload_images = models.ManyToManyField(Images, blank=True)
     upload_video = models.ManyToManyField(VideoFile, blank=True)
 

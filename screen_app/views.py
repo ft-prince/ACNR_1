@@ -55,38 +55,44 @@ def add_content_to_screen(request, screen_id):
     screen = get_object_or_404(Screen, pk=screen_id)
     
     if request.method == 'POST':
-        pdf_form = PDFFileForm(request.POST, request.FILES, prefix='pdf')
-        video_form = VideoFileForm(request.POST, request.FILES, prefix='video')
-        image_form = ImageForm(request.POST, request.FILES, prefix='image')
-        
-        if 'pdf_submit' in request.POST and pdf_form.is_valid():
-            pdf = pdf_form.save()
-            screen.upload_pdf.add(pdf)
-            return redirect('screen_detail', pk=screen_id)
-        
-        if 'video_submit' in request.POST and video_form.is_valid():
-            video = video_form.save()
-            screen.upload_video.add(video)
-            return redirect('screen_detail', pk=screen_id)
         # Handle Image form submission
-        if 'image_submit' in request.POST and image_form.is_valid():
-            image = image_form.save()
-            screen.upload_images.add(image)
-            return redirect('screen_detail', pk=screen_id)
+        if 'image_submit' in request.POST:
+            image_form = ImageForm(request.POST, request.FILES, prefix='image')
+            if image_form.is_valid():
+                image = image_form.save(commit=False)
+                image.image_file = request.FILES.get('image-image_file')
+                image.save()
+                screen.upload_images.add(image)
+                return redirect('screen_detail', pk=screen_id)
+            else:
+                print("Image form errors:", image_form.errors)
+                video_form = VideoFileForm(prefix='video')
         
+        # Handle Video form submission
+        elif 'video_submit' in request.POST:
+            video_form = VideoFileForm(request.POST, request.FILES, prefix='video')
+            if video_form.is_valid():
+                video = video_form.save(commit=False)
+                video.video_file = request.FILES.get('video-video_file')
+                video.save()
+                screen.upload_video.add(video)
+                return redirect('screen_detail', pk=screen_id)
+            else:
+                print("Video form errors:", video_form.errors)
+                image_form = ImageForm(prefix='image')
+        
+        print("POST data:", request.POST)
+        print("FILES:", request.FILES)
     else:
-        pdf_form = PDFFileForm(prefix='pdf')
         video_form = VideoFileForm(prefix='video')
         image_form = ImageForm(prefix='image')
     
     return render(request, 'CRUD/add_content_to_screen.html', {
         'screen': screen,
-        'pdf_form': pdf_form,
         'video_form': video_form,
-        'image_form': image_form,  # Pass the ImageForm to the template
-        
+        'image_form': image_form,
     })
-
+        
 # PDF Views
 @staff_member_required_cbv
 class PDFFileListView(ListView):
