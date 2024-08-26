@@ -150,3 +150,22 @@ class DailyPlanForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if self.instance.pk:
             self.fields['unit'].initial = self.instance.unit
+
+
+# ----------------------------------------------------------------
+from .models import ProductionPlanTotal, Unit
+
+class ProductionPlanTotalForm(forms.ModelForm):
+    class Meta:
+        model = ProductionPlanTotal
+        fields = ['unit', 'total_qty_planned', 'total_qty_actual']
+        widgets = {
+            'unit': forms.Select(attrs={'class': 'select2'}),
+        }
+
+    date = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}))
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk:
+            self.fields['date'].initial = self.instance.date

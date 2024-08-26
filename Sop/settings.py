@@ -42,10 +42,7 @@ INSTALLED_APPS = [
     'user_app',
     'screen_app',
     'rest_framework',
-    'data_import',
-
-
-    
+    'data_import',    
 ]
 
 MIDDLEWARE = [

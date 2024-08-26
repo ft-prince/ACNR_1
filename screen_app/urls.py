@@ -103,6 +103,21 @@ urlpatterns = [
     path('weekly/plan/export/excel/<int:week_id>/', export_weekly_plan_to_excel, name='export_weekly_plan_to_excel'),
 
 # ----------------------------------------------------------------
+    # Total production view
+    path('total-production/',views.total_production, name='total_production'),
+    # ProductionPlanTotal views
+    path('production-plan-total/', views.ProductionPlanTotalListView.as_view(),name='production_plan_total_list'),
+    path('production-plan-total/<int:pk>/', views.ProductionPlanTotalDetailView.as_view(),name='production_plan_total_detail'),
+    path('add-production-plan-total/', views.add_production_plan_total, name='add_production_plan_total'),
+    path('search-units/',views.search_units,name='search_units'),
+    path('update-production-plan-total-actual/<int:plan_id>/', views.update_production_plan_total_actual_value, name='update_production_plan_total_actual'),
+    # URL for exporting ProductionPlanTotal to PDF (renamed)
+    path('export/plan_total/pdf/', views.export_production_plan_total_pdf_auto, name='export_plan_total_pdf'),
+
+    # URL for exporting ProductionPlanTotal to Excel (renamed)
+    path('export/plan_total/excel/', views.export_production_plan_total_to_excel_auto, name='export_plan_total_excel'),
+    
+    
     # path('weekly/', views.plan_list, name='plan_list'),
     # path('plan/<int:pk>/', plan_detail, name='plan_detail'),
     # path('plan/new/', plan_create, name='plan_create'),

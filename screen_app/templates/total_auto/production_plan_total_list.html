@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+
+{% block title %}Production Plan Total List{% endblock %}
+
+{% block content %}
+<h1 class="text-3xl font-bold mb-6 text-white">Production Plan Total List</h1>
+
+<div class="mb-4 flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
+ {% comment %} <a href="{% url 'add_production_plan_total' %}" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
+        Add New Plan
+    </a>  {% endcomment %}
+    
+    <a href="{% url 'export_plan_total_pdf' %}?date={{ request.GET.date }}{% if request.GET.unit %}&unit={{ request.GET.unit }}{% endif %}" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded">
+        Export to PDF
+    </a>
+    <a href="{% url 'export_plan_total_excel' %}?date={{ request.GET.date }}{% if request.GET.unit %}&unit={{ request.GET.unit }}{% endif %}" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded">
+        Export to Excel
+    </a> 
+
+    <form method="get" class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+        <input type="date" name="date" value="{{ current_date|date:'Y-m-d' }}" 
+               class="bg-gray-700 text-white border border-gray-600 rounded px-2 py-1 focus:outline-none focus:border-blue-500">
+        <select name="unit" 
+                class="bg-gray-700 text-white border border-gray-600 rounded px-2 py-1 focus:outline-none focus:border-blue-500">
+            <option value="">All Units</option>
+            {% for unit in units %}
+                <option value="{{ unit.model }}" {% if unit.model == request.GET.unit %}selected{% endif %}>
+                    {{ unit.model }}
+                </option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-4 rounded">
+            Filter
+        </button>
+        <a href="{% url 'production_plan_total_list' %}" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-1 px-4 rounded">
+            Reset
+        </a>
+    </form>
+</div>
+
+<div class="mb-4 flex justify-between">
+    <a href="?date={{ previous_date }}{% if request.GET.unit %}&unit={{ request.GET.unit }}{% endif %}" 
+       class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
+        Previous Day
+    </a>
+
+    <!-- Display the current date -->
+    <span class="text-xl font-semibold py-2 px-4">
+        Current Date: {{ current_date }}
+    </span>
+
+    <a href="?date={{ next_date }}{% if request.GET.unit %}&unit={{ request.GET.unit }}{% endif %}" 
+       class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
+        Next Day
+    </a>
+</div>
+
+<div class="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+    <table class="w-full">
+        <thead>
+            <tr class="bg-gray-700">
+                <th class="p-3 text-left text-white">Date</th>
+                <th class="p-3 text-left text-white">Unit</th>
+                <th class="p-3 text-left text-white">Planned</th>
+                <th class="p-3 text-left text-white">Actual</th>
+                <th class="p-3 text-left text-white">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for total in totals %}
+            <tr class="border-t border-gray-700">
+                <td class="p-3 text-white">{{ total.date|date:"d-m-Y" }}</td>
+                <td class="p-3 text-white">{{ total.unit.model }}</td>
+                <td class="p-3 text-white">{{ total.total_qty_planned }}</td>
+                <td class="p-3 text-white">
+                    <input type="number" 
+                    class="actual-input bg-gray-700 text-white border border-gray-600 rounded px-2 py-1" 
+                    data-total-id="{{ total.s_no }}" 
+                    value="{{ total.total_qty_actual|default_if_none:'0' }}"
+                    min="0">
+                </td>
+                <td class="p-3">
+                    <a href="{% url 'production_plan_total_detail' total.pk %}" class="text-blue-400 hover:text-blue-300">View</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="p-3 text-center text-white">No production plans found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if is_paginated %}
+<div class="mt-4">
+    <span class="step-links text-white">
+        {% if page_obj.has_previous %}
+            <a href="?page=1{% if request.GET.date %}&date={{ request.GET.date }}{% endif %}{% if request.GET.unit %}&unit={{ request.GET.unit }}{% endif %}" class="text-blue-400 hover:text-blue-300">&laquo; first</a>
+            <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.date %}&date={{ request.GET.date }}{% endif %}{% if request.GET.unit %}&unit={{ request.GET.unit }}{% endif %}" class="text-blue-400 hover:text-blue-300">previous</a>
+        {% endif %}
+
+        <span class="current">
+            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
+        </span>
+
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% if request.GET.date %}&date={{ request.GET.date }}{% endif %}{% if request.GET.unit %}&unit={{ request.GET.unit }}{% endif %}" class="text-blue-400 hover:text-blue-300">next</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.date %}&date={{ request.GET.date }}{% endif %}{% if request.GET.unit %}&unit={{ request.GET.unit }}{% endif %}" class="text-blue-400 hover:text-blue-300">last &raquo;</a>
+        {% endif %}
+    </span>
+</div>
+{% endif %}
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.actual-input').forEach(input => {
+            input.addEventListener('change', function() {
+                const planId = this.getAttribute('data-total-id');
+                const newValue = this.value;
+    
+                if (!planId) {
+                    console.error("Plan ID is missing for input:", this);
+                    alert("Error: Plan ID is missing. Please refresh the page and try again.");
+                    return;
+                }
+    
+                // Debugging log
+                console.log("Sending data:", { qty_actual: newValue });
+    
+                fetch(`/screen/update-production-plan-total-actual/${planId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({ qty_actual: newValue })  // Ensure data is sent correctly
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        console.log("Updated successfully");
+                    } else {
+                        console.error("Update failed:", data.error);
+                        alert("Update failed: " + (data.error || "Unknown error"));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert("An error occurred while updating. Please try again.");
+                });
+            });
+        });
+    });
+    </script>
+
+{% endblock %}

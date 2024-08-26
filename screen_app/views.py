@@ -1347,3 +1347,426 @@ class WeeklyProductionPlansView(ListView):
         start_of_week = today - timedelta(days=today.weekday())  # Monday
         end_of_week = start_of_week + timedelta(days=6)  # Sunday
         return WeeklyProductionPlan.objects.filter(date__range=[start_of_week, end_of_week])
+
+
+
+# ----
+# ----------------------------------------------------------------
+
+from django.views.generic import ListView, DetailView
+from django.shortcuts import render, redirect
+from .models import ProductionPlanTotal, Unit
+from .forms import ProductionPlanTotalForm
+from datetime import datetime, timedelta
+from django.db.models import Q
+
+class ProductionPlanTotalListView(ListView):
+    model = ProductionPlanTotal
+    template_name = 'total_auto/production_plan_total_list.html'
+    context_object_name = 'totals'
+    paginate_by = 10
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        date = self.request.GET.get('date')
+
+        if date:
+            try:
+                date = datetime.strptime(date, "%Y-%m-%d").date()
+            except ValueError:
+                date = datetime.today().date()
+        else:
+            date = datetime.today().date()
+
+        queryset = queryset.filter(date=date)
+
+        unit = self.request.GET.get('unit')
+        if unit:
+            queryset = queryset.filter(unit__model=unit)
+
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        units = Unit.objects.all()
+        context['units'] = units
+
+        date_str = self.request.GET.get('date')
+        if date_str:
+            try:
+                current_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+            except ValueError:
+                current_date = datetime.today().date()
+        else:
+            current_date = datetime.today().date()
+
+        previous_date = current_date - timedelta(days=1)
+        next_date = current_date + timedelta(days=1)
+
+        context['current_date'] = current_date.strftime("%Y-%m-%d")
+        context['previous_date'] = previous_date.strftime("%Y-%m-%d")
+        context['next_date'] = next_date.strftime("%Y-%m-%d")
+
+        return context
+
+class ProductionPlanTotalDetailView(DetailView):
+    model = ProductionPlanTotal
+    template_name = 'total_auto/production_plan_total_detail.html'
+    context_object_name = 'total'
+
+def add_production_plan_total(request):
+    if request.method == 'POST':
+        form = ProductionPlanTotalForm(request.POST)
+        if form.is_valid():
+            total = form.save(commit=False)
+            total.date = form.cleaned_data['date']
+            total.save()
+            return redirect('production_plan_total_list')
+    else:
+        form = ProductionPlanTotalForm()
+
+    units = Unit.objects.all()
+
+    return render(request, 'total_auto/add_production_plan_total.html', {
+        'form': form,
+        'units': units,
+        'today_date': datetime.today().date().strftime("%Y-%m-%d"),
+    })
+
+def search_units(request):
+    query = request.GET.get('query', '')
+    units = Unit.objects.filter(
+        Q(code__icontains=query) | Q(model__icontains=query)
+    )[:10]  # Limit to 10 results
+    data = [{'id': unit.id, 'text': f"{unit.code} - {unit.model}"} for unit in units]
+    return JsonResponse({'results': data})
+
+
+
+
+
+
+
+
+
+#  perfectly done no changes needed here
+from datetime import datetime
+from django.shortcuts import render
+from django.http import JsonResponse
+from django.db.models import Sum
+from .models import ProductionPlan, Unit
+
+def total_production(request):
+    # Use today's date if none is provided
+    date_str = request.GET.get('date', None)
+    if date_str is None or date_str == 'today':
+        date = datetime.today().date()
+    else:
+        date = datetime.strptime(date_str, "%Y-%m-%d").date()
+
+    # Format the date as "day-month-year"
+    formatted_date = date.strftime("%d-%m-%Y")
+    
+    plans = ProductionPlan.objects.filter(date=date).order_by('unit', 's_no')
+
+    total_planned = plans.aggregate(Sum('qty_planned'))['qty_planned__sum'] or 0
+    total_actual = plans.aggregate(Sum('qty_actual'))['qty_actual__sum'] or 0
+
+    # Group plans by unit
+    grouped_plans = {}
+    for plan in plans:
+        if plan.unit not in grouped_plans:
+            grouped_plans[plan.unit] = {
+                'unit': plan.unit,
+                'qty_planned': 0,
+                'qty_actual': 0,
+                'difference': 0,
+                'status': ''
+            }
+        
+        grouped_plans[plan.unit]['qty_planned'] += plan.qty_planned
+        grouped_plans[plan.unit]['qty_actual'] += plan.qty_actual
+
+    for unit_data in grouped_plans.values():
+        unit_data['difference'] = unit_data['qty_planned'] - unit_data['qty_actual']
+        if unit_data['qty_actual'] == 0:
+            unit_data['status'] = "Pending"
+        elif unit_data['qty_actual'] < unit_data['qty_planned']:
+            unit_data['status'] = "In-Prog."
+        elif unit_data['qty_actual'] >= unit_data['qty_planned']:
+            unit_data['status'] = "Completed"
+
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        data = {
+            'current_date': formatted_date,
+            'plans': list(grouped_plans.values()),
+            'total_planned': total_planned,
+            'total_actual': total_actual,
+        }
+        return JsonResponse(data)
+
+    context = {
+        'current_date': formatted_date,
+        'plans': grouped_plans.values(),
+        'total_planned': total_planned,
+        'total_actual': total_actual,
+    }
+    return render(request, 'total_auto/total_production.html', context)
+
+
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from .models import ProductionPlanTotal
+import json
+
+# @csrf_exempt
+# def update_production_plan_total_actual_value(request, plan_id):
+#     if request.method == 'POST':
+#         try:
+#             data = json.loads(request.body)
+#             qty_actual = data.get('qty_actual')
+
+#             # Validate input
+#             if qty_actual is None:
+#                 return JsonResponse({'success': False, 'error': 'No quantity provided'}, status=400)
+            
+#             # Ensure qty_actual is a valid integer
+#             try:
+#                 qty_actual = int(qty_actual)
+#             except ValueError:
+#                 return JsonResponse({'success': False, 'error': 'Quantity must be an integer'}, status=400)
+
+#             # Update the plan
+#             plan = ProductionPlanTotal.objects.get(s_no=plan_id)
+#             plan.total_qty_actual = qty_actual
+#             plan.save()
+
+#             return JsonResponse({'success': True})
+#         except ProductionPlanTotal.DoesNotExist:
+#             return JsonResponse({'success': False, 'error': 'Plan not found'}, status=404)
+#         except json.JSONDecodeError:
+#             return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
+#         except Exception as e:
+#             # Log the exception for further inspection
+#             import logging
+#             logger = logging.getLogger(__name__)
+#             logger.error('Unexpected error: %s', str(e), exc_info=True)
+#             return JsonResponse({'success': False, 'error': str(e)}, status=500)
+#     else:
+#         return JsonResponse({'success': False, 'error': 'Invalid request method'}, status=405)
+
+
+
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from .models import ProductionPlanTotal
+
+@csrf_exempt  # Only use if you aren't using the CSRF token in the fetch headers
+def update_production_plan_total_actual_value(request, plan_id):
+    if request.method == 'POST':
+        try:
+            # Get the data from the request
+            data = json.loads(request.body)
+            qty_actual = data.get('qty_actual')
+
+            # Retrieve the plan and update the actual quantity
+            plan = ProductionPlanTotal.objects.get(pk=plan_id)
+            plan.total_qty_actual = qty_actual
+            plan.save()
+
+            # Return a success response
+            return JsonResponse({'success': True})
+        except ProductionPlanTotal.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Production plan not found'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    else:
+        return JsonResponse({'success': False, 'error': 'Invalid request method'})
+
+
+def update_production_plan_total_actual_value2(request,pk):
+    if request.method == 'POST':
+        try:
+            plan = ProductionPlanTotal.objects.get(pk=pk)
+            data = json.loads(request.body)
+            plan.total_qty_actual = data.get('total_qty_actual')
+            plan.save()
+            return JsonResponse({'success': True})
+        except ProductionPlan.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Plan not found'}, status=404)
+    return JsonResponse({'success': False, 'error': 'Invalid request method'}, status=400)
+    
+    
+    
+    
+    
+#  exportign 
+# # 
+
+import pandas as pd
+from django.http import HttpResponse
+from .models import ProductionPlanTotal
+from datetime import datetime
+from io import BytesIO
+
+def export_production_plan_total_to_excel_auto(request):
+    # Filter the ProductionPlanTotal queryset
+    queryset = ProductionPlanTotal.objects.all()
+    date = request.GET.get('date')
+
+    if date:
+        try:
+            date = datetime.strptime(date, "%Y-%m-%d").date()
+        except ValueError:
+            date = datetime.today().date()
+    else:
+        date = datetime.today().date()
+
+    queryset = queryset.filter(date=date)
+
+    unit = request.GET.get('unit')
+    if unit:
+        queryset = queryset.filter(unit__code=unit)
+
+    # Convert to DataFrame
+    data = list(queryset.values('date', 'unit__code', 'unit__model', 'total_qty_planned', 'total_qty_actual'))
+    df = pd.DataFrame(data)
+
+    # Rename columns for better readability
+    df.columns = ['Date', 'Unit Code', 'Unit Model', 'Total Planned Qty', 'Total Actual Qty']
+
+    # Create a Pandas Excel writer using XlsxWriter as the engine
+    buffer = BytesIO()
+    with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+        # Write the dataframe to the worksheet
+        df.to_excel(writer, sheet_name='Production Plan Total', index=False, startrow=1)
+
+        # Get the xlsxwriter workbook and worksheet objects
+        workbook = writer.book
+        worksheet = writer.sheets['Production Plan Total']
+
+        # Add a title
+        title = f"Production Plan Total - {date} "
+        worksheet.write(0, 0, title, workbook.add_format({'bold': True, 'font_size': 16}))
+
+        # Get the dimensions of the dataframe
+        (max_row, max_col) = df.shape
+
+        # Create a format for the header row
+        header_format = workbook.add_format({
+            'bold': True,
+            'text_wrap': True,
+            'valign': 'top',
+            'fg_color': '#D7E4BC',
+            'border': 1
+        })
+
+        # Write the column headers with the defined format
+        for col_num, value in enumerate(df.columns.values):
+            worksheet.write(1, col_num, value, header_format)
+
+        # Set the column width and format
+        worksheet.set_column(0, 0, 15)  # Date
+        worksheet.set_column(1, 1, 15)  # Unit Code
+        worksheet.set_column(2, 2, 20)  # Unit Model
+        worksheet.set_column(3, 3, 20)  # Total Planned Qty
+        worksheet.set_column(4, 4, 20)  # Total Actual Qty
+
+        # Add borders to all cells
+        border_fmt = workbook.add_format({'border': 1})
+        worksheet.conditional_format(1, 0, max_row+1, max_col-1, {'type': 'no_errors', 'format': border_fmt})
+
+    # Create the HttpResponse object with Excel content
+    buffer.seek(0)
+    response = HttpResponse(buffer.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename="production_plan_total_{date}.xlsx"'
+
+    return response
+
+
+
+
+
+
+
+from io import BytesIO
+from django.http import HttpResponse
+from reportlab.lib.pagesizes import letter, landscape
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
+from .models import ProductionPlanTotal
+from datetime import datetime
+
+def export_production_plan_total_pdf_auto(request):
+    # Filter the ProductionPlanTotal queryset
+    queryset = ProductionPlanTotal.objects.all()
+    date = request.GET.get('date')
+
+    if date:
+        try:
+            date = datetime.strptime(date, "%Y-%m-%d").date()
+        except ValueError:
+            date = datetime.today().date()
+    else:
+        date = datetime.today().date()
+
+    queryset = queryset.filter(date=date)
+
+    unit = request.GET.get('unit')
+    if unit:
+        queryset = queryset.filter(unit__code=unit)
+
+    # Create the HttpResponse object with PDF headers
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=landscape(letter), rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=18)
+    elements = []
+
+    # Add title
+    styles = getSampleStyleSheet()
+    title = Paragraph(f"Production Plan Total - {date}", styles['Title'])
+    elements.append(title)
+
+    # Create table data
+    data = [['Date', 'Unit Code', 'Unit Model', 'Total Planned Qty', 'Total Actual Qty']]
+    for plan in queryset:
+        data.append([
+            plan.date.strftime("%Y-%m-%d"),
+            plan.unit.code,
+            plan.unit.model,
+            str(plan.total_qty_planned),
+            str(plan.total_qty_actual)
+        ])
+
+    # Create table
+    table = Table(data)
+
+    # Add style to table
+    style = TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 14),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 1), (-1, -1), 12),
+        ('TOPPADDING', (0, 1), (-1, -1), 6),
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 6),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+    ])
+    table.setStyle(style)
+
+    # Add table to elements
+    elements.append(table)
+
+    # Build PDF
+    doc.build(elements)
+    
+    # FileResponse sets the Content-Disposition header so that browsers
+    # present the option to save the file.
+    buffer.seek(0)
+    return HttpResponse(buffer, content_type='application/pdf')

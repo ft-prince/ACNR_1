@@ -1,6 +1,6 @@
 from django.contrib import admin 
 
-from .models import Product, Screen ,PDFFile,VideoFile,Unit, DailyProductionPlan ,ProductionPlan ,AssemblyLine
+from .models import Product, Screen ,PDFFile,VideoFile,Unit, DailyProductionPlan ,ProductionPlan ,AssemblyLine,ProductionPlanTotal
 
 # Register your models here.
 admin.site.register(Product)
@@ -18,6 +18,7 @@ class ImagesAdmin(admin.ModelAdmin):
 admin.site.register(Images, ImagesAdmin)
 admin.site.register(WeeklyProductionPlan)
 admin.site.register(DailyPlan)
+admin.site.register(ProductionPlanTotal)
 
 
 

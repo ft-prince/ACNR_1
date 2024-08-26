@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.http import JsonResponse
 from django.utils import timezone
 
 
@@ -125,11 +126,50 @@ class ProductionPlan(models.Model):
     class Meta:
         verbose_name = "Daily Production Plan Vs Actual LineWise"
         verbose_name_plural = "Daily Production Plan Vs Actual Total LineWise"        
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        ProductionPlanTotal.update_or_create_total(self.date, self.unit)
 
 
 
 # ----------------------------------------------------------------------------------------
+# total
 
+class ProductionPlanTotal(models.Model):
+    s_no = models.AutoField(primary_key=True)
+    date = models.DateField(default=timezone.now)
+    unit = models.ForeignKey(Unit, on_delete=models.PROTECT)
+    total_qty_planned = models.IntegerField(default=0)
+    total_qty_actual = models.IntegerField(default=0)
+
+    def __str__(self):
+        return f"{self.date} - {self.unit.model} - Total"
+
+    class Meta:
+        verbose_name = "Daily Production Plan Vs Actual Total"
+        verbose_name_plural = "Daily Production Plan Vs Actual Totals"
+        ordering = ['date', 's_no']
+        unique_together = ['date', 'unit']
+
+    @classmethod
+    def update_or_create_total(cls, date, unit):
+        total_qty_planned = ProductionPlan.objects.filter(
+            date=date, unit=unit
+        ).aggregate(total=models.Sum('qty_planned'))['total'] or 0
+
+        total_qty_actual = ProductionPlan.objects.filter(
+            date=date, unit=unit
+        ).aggregate(total=models.Sum('qty_actual'))['total'] or 0
+
+        obj, created = cls.objects.update_or_create(
+            date=date,
+            unit=unit,
+            defaults={
+                'total_qty_planned': total_qty_planned,
+                'total_qty_actual': total_qty_actual,
+            }
+        )
+        return obj
 
 
 # -------------------------------------------------------
