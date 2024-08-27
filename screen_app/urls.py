@@ -101,10 +101,11 @@ urlpatterns = [
     
     # Endpoint to export the weekly plan to an Excel file
     path('weekly/plan/export/excel/<int:week_id>/', export_weekly_plan_to_excel, name='export_weekly_plan_to_excel'),
+    path('weekly-production-plan/', views.weekly_production_plan_view, name='weekly_production_plan'),
 
 # ----------------------------------------------------------------
     # Total production view
-    path('total-production/',views.total_production, name='total_production'),
+    path('auto/',views.total_production, name='total_production'),
     # ProductionPlanTotal views
     path('production-plan-total/', views.ProductionPlanTotalListView.as_view(),name='production_plan_total_list'),
     path('production-plan-total/<int:pk>/', views.ProductionPlanTotalDetailView.as_view(),name='production_plan_total_detail'),
@@ -116,8 +117,7 @@ urlpatterns = [
 
     # URL for exporting ProductionPlanTotal to Excel (renamed)
     path('export/plan_total/excel/', views.export_production_plan_total_to_excel_auto, name='export_plan_total_excel'),
-    
-    
+        
     # path('weekly/', views.plan_list, name='plan_list'),
     # path('plan/<int:pk>/', plan_detail, name='plan_detail'),
     # path('plan/new/', plan_create, name='plan_create'),

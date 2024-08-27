@@ -1141,6 +1141,8 @@ class WeeklyProductionPlanListView(ListView):
         context['current_month'] = self.request.GET.get('month', datetime.now().strftime("%Y-%m"))
         return context
 
+from django.utils.dateparse import parse_date
+
 class WeeklyProductionPlanDetailView(DetailView):
     model = WeeklyProductionPlan
     template_name = 'weekly/production_plan_detail.html'
@@ -1350,6 +1352,56 @@ class WeeklyProductionPlansView(ListView):
 
 
 
+from django.shortcuts import render
+from django.http import JsonResponse
+from datetime import datetime, timedelta
+from collections import defaultdict
+
+def weekly_production_plan_view(request):
+    today = datetime.today().date()
+    
+    # Find the current week's plan
+    current_week_plan = WeeklyProductionPlan.objects.filter(
+        start_date__lte=today,
+        start_date__gte=today - timedelta(days=today.weekday())
+    ).first()
+
+    if current_week_plan:
+        # Get the daily plans for the week
+        daily_plans = DailyPlan.objects.filter(weekly_plan=current_week_plan).order_by('date')
+        
+        # Organize data by date and unit
+        organized_data = defaultdict(lambda: defaultdict(int))
+        units = set()
+        dates = set()
+        
+        for plan in daily_plans:
+            organized_data[plan.unit.code][plan.date] = plan.quantity
+            units.add((plan.unit.code, plan.unit.model))
+            dates.add(plan.date)
+        
+        # Sort dates and units
+        sorted_dates = sorted(dates)
+        sorted_units = sorted(units)
+
+    else:
+        organized_data = {}
+        sorted_dates = []
+        sorted_units = []
+
+    context = {
+        'weekly_plan': current_week_plan,
+        'organized_data': dict(organized_data),
+        'dates': sorted_dates,
+        'units': sorted_units,
+    }
+
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse(context)
+
+    return render(request, 'weekly/weekly_production_plan.html', context)
+
+
 # ----
 # ----------------------------------------------------------------
 
@@ -1513,7 +1565,6 @@ def total_production(request):
     }
     return render(request, 'total_auto/total_production.html', context)
 
-
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from .models import ProductionPlanTotal
@@ -1600,7 +1651,7 @@ def update_production_plan_total_actual_value2(request,pk):
     
     
     
-#  exportign 
+#  exporting
 # # 
 
 import pandas as pd

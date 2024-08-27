@@ -25,7 +25,8 @@ class DailyPlan(models.Model):
     unit = models.ForeignKey(Unit, on_delete=models.CASCADE)
 
     class Meta:
-        unique_together = ['weekly_plan', 'date']
+        verbose_name = "Daily plans for weekly production"
+  
 
     def __str__(self):
         return f"{self.date} - {self.unit}"  # Adjusted to use unit name instead of plan_type_display

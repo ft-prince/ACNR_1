@@ -1,9 +1,10 @@
+{% load custom_filters %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Total Production Plan Vs Actual</title>
+    <title>Weekly Production Plan</title>
     <style>
         html, body {
             margin: 0;
@@ -11,11 +12,12 @@
             height: 100%;
             width: 100%;
             overflow: hidden;
-        }
-        body {
             background-color: #0866FF;
             color: #ffffff;
             font-family: Arial, sans-serif;
+        }
+        body {
+            padding-top: 10px;
         }
         .table-header2 { font-size: 2.5vw; }
         .table-cell { font-size: 3.7vw; }
@@ -75,49 +77,35 @@
 <body>
     <div class="header-container">
         <h1 class="text-center table-header2">
-            <span class="header-item bg-red-200">Total Production</span>
-            <span class="header-item bg-red-200">Daily Prod. Plan Vs Actual</span>
-            <span class="header-item bg-red-200" id="currentDate">{{ current_date }}</span>
+            <span class="header-item bg-red-200">Weekly Production Plan</span>
+            <br>
+            <span class="header-item bg-red-200" id="currentDate">Week starting: {{ weekly_plan.start_date|date:"d-M" }}</span>
         </h1>
     </div>
     <div class="table-container" id="tableContainer">
         <table>
             <thead>
                 <tr class="bg-red-200">
-                    <th class="table-header2">SN</th>
+                    <th class="table-header2">SNo</th>
                     <th class="table-header2">Unit Code</th>
                     <th class="table-header2 text-start">Unit Model</th>
-                    <th class="table-header2 bg-red-200">Qty Plan</th>
-                    <th class="table-header2 bg-red-200">Qty Act</th>
-                    <th class="table-header2">Status</th>
+                    {% for date in dates %}
+                    <th class="table-header2 bg-red-200">{{ date|date:"d-M" }}</th>
+                    {% endfor %}
                 </tr>
             </thead>
             <tbody id="tableBody">
-                {% for plan in plans %}
+                {% for unit_code, unit_model in units %}
                 <tr>
                     <td class="table-cell text-center">{{ forloop.counter }}</td>
-                    <td class="table-cell text-center">{{ plan.unit.code }}</td>
-                    <td class="table-cell text-start">{{ plan.unit.model }}</td>
-                    <td class="table-cell bg-red-200 text-center font-bold">{{ plan.qty_planned }}</td>
-                    <td class="table-cell bg-red-200 text-center font-bold">{{ plan.qty_actual }}</td>
-                    <td class="table-cell 
-                    {% if plan.status == 'Completed' %}status-completed
-                    {% elif plan.status == 'In-Prog.' %}status-inprogress
-                    {% elif plan.status == 'Pending' %}status-pending
-                    {% endif %}">
-                    {{ plan.status }}
-                    </td>
+                    <td class="table-cell text-center">{{ unit_code }}</td>
+                    <td class="table-cell text-start">{{ unit_model }}</td>
+                    {% for date in dates %}
+                    <td class="table-cell bg-red-200 text-center font-bold">{{ organized_data|get_item:unit_code|get_item:date|default:"-" }}</td>
+                    {% endfor %}
                 </tr>
                 {% endfor %}
             </tbody>
-            <tfoot>
-                <tr class="bg-gray-200">
-                    <td colspan="3" class="table-cell text-center font-bold">Total</td>
-                    <td class="table-cell bg-red-200 text-center font-bold">{{ total_planned }}</td>
-                    <td class="table-cell bg-red-200 text-center font-bold">{{ total_actual }}</td>
-                    <td></td>
-                </tr>
-            </tfoot>
         </table>
     </div>
 
@@ -133,10 +121,9 @@
             const refreshInterval = 30000; // Refresh every 30 seconds
             const url = window.location.href;
 
-
             setInterval( refreshInterval); // Refresh data periodically
 
-            // Existing scroll handling code
+            // Scroll handling code
             const tableContainer = document.getElementById('tableContainer');
             let scrollPosition = 0;
             let scrollSpeed = 1;

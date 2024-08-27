@@ -12,8 +12,6 @@
             <dd class="text-white">{{ plan.start_date|date:"d-m-Y" }}</dd>
         </div>
         <div>
-
-
             <dt class="font-bold text-gray-400">Month:</dt>
             <dd class="text-white">{{ plan.month }}</dd>
         </div>
@@ -24,17 +22,22 @@
     <a href="{% url 'add_weekly_daily_plan' %}" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
         Add New Plan
     </a>
-<!-- Example HTML with a link to export PDF -->
-<a href="{% url 'export_weekly_plan_pdf' week_id=plan.id %}" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
-    Export Weekly Plan as PDF
-</a>
-<a href="{% url 'export_weekly_plan_to_excel' week_id=plan.id %}" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
-    Export Weekly Plan as Excel
-</a>
-
+    <a href="{% url 'export_weekly_plan_pdf' week_id=plan.id %}" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
+        Export Weekly Plan as PDF
+    </a>
+    <a href="{% url 'export_weekly_plan_to_excel' week_id=plan.id %}" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
+        Export Weekly Plan as Excel
+    </a>
 </div>
 
 <h2 class="text-2xl font-bold mt-8 mb-4 text-white">Daily Plans</h2>
+
+<!-- Date search form -->
+<div class="mb-4">
+    <input type="date" id="dateSearch" class="bg-gray-700 text-white border border-gray-600 rounded px-2 py-1">
+    <button id="searchButton" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-4 rounded ml-2">Search</button>
+    <button id="resetButton" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-1 px-4 rounded ml-2">Reset</button>
+</div>
 
 <div class="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
     <table class="w-full">
@@ -46,10 +49,10 @@
                 <th class="p-3 text-left text-white">Actions</th>
             </tr>
         </thead>
-        <tbody>
+        <tbody id="planTableBody">
             {% for daily_plan in daily_plans %}
             <tr class="border-t border-gray-700">
-                <td class="p-3 text-white">{{ daily_plan.date|date:"d-m-Y" }}</td>
+                <td class="p-3 text-white">{{ daily_plan.date|date:"Y-m-d" }}</td>
                 <td class="p-3 text-white">{{ daily_plan.unit.code }} - {{ daily_plan.unit.model }}</td>
                 <td class="p-3 text-white">
                     <input type="number" 
@@ -68,7 +71,6 @@
             </tr>
             {% endfor %}
         </tbody>
-        
     </table>
 </div>
 
@@ -81,40 +83,100 @@
 
 {% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('.actual-input').forEach(input => {
-        input.addEventListener('change', function() {
-            const planId = this.getAttribute('data-plan-id');
-            const newValue = this.value;
+    document.addEventListener('DOMContentLoaded', function() {
+        const dateSearch = document.getElementById('dateSearch');
+        const searchButton = document.getElementById('searchButton');
+        const resetButton = document.getElementById('resetButton');
+        const planTableBody = document.getElementById('planTableBody');
+        const originalRows = [...planTableBody.querySelectorAll('tr')];
+        
+        // Set default date to today
+        function setDefaultDate() {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+    
+        dateSearch.value = setDefaultDate();
+    
+        // Function to filter rows
+        function filterRows(searchDate) {
+            const filteredRows = originalRows.filter(row => {
+                const rowDate = row.querySelector('td').textContent.trim();
+                return rowDate === searchDate;
+            });
+    
+            planTableBody.innerHTML = '';
+            if (filteredRows.length > 0) {
+                filteredRows.forEach(row => planTableBody.appendChild(row.cloneNode(true)));
+            } else {
+                const noResultRow = document.createElement('tr');
+                noResultRow.innerHTML = '<td colspan="4" class="p-3 text-center text-white">No plans found for the selected date.</td>';
+                planTableBody.appendChild(noResultRow);
+            }
+        }
+    
+            // Function to show all rows
+    function showAllRows() {
+        planTableBody.innerHTML = '';
+        originalRows.forEach(row => planTableBody.appendChild(row.cloneNode(true)));
+    }
 
-            fetch(`/screen/weekly/plan/update/${planId}/`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': '{{ csrf_token }}'
-                },
-                body: JSON.stringify({ quantity: newValue })
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.success) {
-                    // Optional: Show success message or update the UI
-                } else {
-                    console.error("Update failed:", data.error);
-                    alert("Update failed: " + (data.error || "Unknown error"));
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert("An error occurred while updating. Please try again.");
+        // Initial filter with today's date
+        filterRows(dateSearch.value);
+    
+        // Quantity update functionality
+        document.querySelectorAll('.actual-input').forEach(input => {
+            input.addEventListener('change', function() {
+                const planId = this.getAttribute('data-plan-id');
+                const newValue = this.value;
+    
+                fetch(`/screen/weekly/plan/update/${planId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({ quantity: newValue })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        // Optional: Show success message or update the UI
+                    } else {
+                        console.error("Update failed:", data.error);
+                        alert("Update failed: " + (data.error || "Unknown error"));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert("An error occurred while updating. Please try again.");
+                });
             });
         });
+    
+        // Date search functionality
+        searchButton.addEventListener('click', function() {
+            const searchDate = dateSearch.value;
+            if (!searchDate) {
+                alert('Please select a date to search');
+                return;
+            }
+            filterRows(searchDate);
+        });
+    
+        // Reset functionality
+        resetButton.addEventListener('click', function() {
+            dateSearch.value = setDefaultDate();
+            showAllRows();
+        });
     });
-});
-</script>
+    </script>
 {% endblock %}
