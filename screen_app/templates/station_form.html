@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+  <div class="container mx-auto p-4 bg-gray-900 text-red-800">
+    <h1 class="text-2xl font-bold mb-4">{% if form.instance.pk %}Edit{% else %}Create{% endif %} Station</h1>
+    <form method="post" class="space-y-4 bg-gray-100 p-6 rounded shadow">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <div id="media-preview" class="grid grid-cols-2 gap-4"></div>
+      <button type="submit" class="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-700">Save</button>
+    </form>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/jquery.min.js' %}"></script>
+<script>
+$(document).ready(function() {
+    function updateMediaPreview() {
+        var selectedUnits = $('#id_units').val();
+        if (selectedUnits) {
+            $.ajax({
+                url: '{% url "get_unit_media" %}',
+                data: {
+                    'units[]': selectedUnits
+                },
+                dataType: 'json',
+                success: function(data) {
+                    var mediaPreview = $('#media-preview');
+                    mediaPreview.empty();
+                    data.media.forEach(function(media) {
+                        if (['jpg', 'jpeg', 'png', 'gif'].includes(media.type)) {
+                            mediaPreview.append('<img src="' + media.url + '" class="max-w-full h-auto rounded shadow">');
+                        } else if (['mp4', 'mov', 'avi'].includes(media.type)) {
+                            mediaPreview.append('<video src="' + media.url + '" controls class="max-w-full h-auto rounded shadow"></video>');
+                        }
+                    });
+                }
+            });
+        }
+    }
+
+    $('#id_units').change(updateMediaPreview);
+    updateMediaPreview();  // Call on page load for edit form
+});
+</script>
+{% endblock %}

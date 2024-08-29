@@ -1,7 +1,9 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.http import JsonResponse
+from django.urls import reverse
 from django.utils import timezone
+from django.core.validators import FileExtensionValidator
 
 
 class Product(models.Model): 
@@ -32,6 +34,24 @@ class Product(models.Model):
     def __str__(self):
         return self.name
 
+# -------------------------------
+class Unit(models.Model):
+    code = models.CharField(max_length=20, unique=True)
+    model = models.CharField(max_length=100)
+
+    def __str__(self):
+        return f"{self.code} - {self.model}"
+
+
+class UnitMedia(models.Model):
+    unit = models.ForeignKey(Unit, related_name='media', on_delete=models.CASCADE)
+    file = models.FileField(
+        upload_to='unit_media/',
+        validators=[FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png', 'mp4', 'mov', 'zip'])]
+    )
+    
+    def __str__(self):
+        return f"{self.unit.code} - {self.file.name}"
 
 class PDFFile(models.Model):
     pdf_duration = models.IntegerField(default=20,help_text="Duration of pdf in seconds")
@@ -65,22 +85,22 @@ class VideoFile(models.Model):
 class Screen(models.Model):
     screen_id = models.AutoField(primary_key=True)
     manager = models.ForeignKey(User, on_delete=models.CASCADE, blank=True)
-    product = models.ForeignKey(Product, on_delete=models.CASCADE,blank=True,default='Trans ACNR')
-    # upload_pdf = models.ManyToManyField(PDFFile, blank=True)
     upload_images = models.ManyToManyField(Images, blank=True)
     upload_video = models.ManyToManyField(VideoFile, blank=True)
 
     def __str__(self):
-        return f"Screen {self.screen_id} at {self.manager} for {self.product}"
+        return f"Screen {self.screen_id} at {self.manager} "
     
-
-# -------------------------------
-class Unit(models.Model):
-    code = models.CharField(max_length=20, unique=True)
-    model = models.CharField(max_length=100)
+class Station(models.Model):
+    name = models.CharField(max_length=100)
+    units = models.ManyToManyField(Unit, related_name='stations')
+    manager = models.ForeignKey(User, on_delete=models.CASCADE)
+    content = models.TextField(blank=True)
 
     def __str__(self):
-        return f"{self.code} - {self.model}"
+        return self.name
+    def get_absolute_url(self):
+        return reverse('station_detail', kwargs={'pk': self.pk})
 
 
 class AssemblyLine(models.Model):

@@ -6,19 +6,17 @@
 <h1 class="text-3xl font-bold mb-6 text-white">Production Plan Total List</h1>
 
 <div class="mb-4 flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
- {% comment %} <a href="{% url 'add_production_plan_total' %}" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
-        Add New Plan
-    </a>  {% endcomment %}
-    
-    <a href="{% url 'export_plan_total_pdf' %}?date={{ request.GET.date }}{% if request.GET.unit %}&unit={{ request.GET.unit }}{% endif %}" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded">
+    <a href="{% url 'export_plan_total_pdf' %}?start_date={{ request.GET.start_date }}&end_date={{ request.GET.end_date }}{% if request.GET.unit %}&unit={{ request.GET.unit }}{% endif %}" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded">
         Export to PDF
     </a>
-    <a href="{% url 'export_plan_total_excel' %}?date={{ request.GET.date }}{% if request.GET.unit %}&unit={{ request.GET.unit }}{% endif %}" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded">
+    <a href="{% url 'export_plan_total_excel' %}?start_date={{ request.GET.start_date }}&end_date={{ request.GET.end_date }}{% if request.GET.unit %}&unit={{ request.GET.unit }}{% endif %}" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded">
         Export to Excel
     </a> 
 
     <form method="get" class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-        <input type="date" name="date" value="{{ current_date|date:'Y-m-d' }}" 
+        <input type="date" name="start_date" value="{{ start_date|date:'d-m-Y' }}" 
+               class="bg-gray-700 text-white border border-gray-600 rounded px-2 py-1 focus:outline-none focus:border-blue-500">
+        <input type="date" name="end_date" value="{{ end_date|date:'d-m-Y' }}" 
                class="bg-gray-700 text-white border border-gray-600 rounded px-2 py-1 focus:outline-none focus:border-blue-500">
         <select name="unit" 
                 class="bg-gray-700 text-white border border-gray-600 rounded px-2 py-1 focus:outline-none focus:border-blue-500">
@@ -38,6 +36,22 @@
     </form>
 </div>
 
+<div class="mb-4">
+    <span class="text-xl font-semibold py-2 px-4 text-white">
+        Date Range: {{ start_date|date:'d-m-Y' }} to {{ end_date|date:'d-m-Y' }}
+    </span>
+</div>
+
+<div class="mb-4">
+    <span class="text-xl font-semibold py-2 px-4 text-white">
+        Overall Total Planned: {{ total_planned }}
+    </span>
+    <span class="text-xl font-semibold py-2 px-4 text-white">
+        Overall Total Actual: {{ total_actual }}
+    </span>
+</div>
+
+
 <div class="mb-4 flex justify-between">
     <a href="?date={{ previous_date }}{% if request.GET.unit %}&unit={{ request.GET.unit }}{% endif %}" 
        class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
@@ -55,42 +69,32 @@
     </a>
 </div>
 
-<div class="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+<div class="bg-gray-800 rounded-lg shadow-lg overflow-hidden mb-6">
+    <h2 class="text-2xl font-bold p-4 bg-gray-700 text-white">Cumulative Totals by Unit</h2>
     <table class="w-full">
         <thead>
             <tr class="bg-gray-700">
-                <th class="p-3 text-left text-white">Date</th>
                 <th class="p-3 text-left text-white">Unit</th>
-                <th class="p-3 text-left text-white">Planned</th>
-                <th class="p-3 text-left text-white">Actual</th>
-                <th class="p-3 text-left text-white">Actions</th>
+                <th class="p-3 text-left text-white">Total Planned</th>
+                <th class="p-3 text-left text-white">Total Actual</th>
             </tr>
         </thead>
         <tbody>
-            {% for total in totals %}
+            {% for total in cumulative_totals %}
             <tr class="border-t border-gray-700">
-                <td class="p-3 text-white">{{ total.date|date:"d-m-Y" }}</td>
-                <td class="p-3 text-white">{{ total.unit.model }}</td>
-                <td class="p-3 text-white">{{ total.total_qty_planned }}</td>
-                <td class="p-3 text-white">
-                    <input type="number" 
-                    class="actual-input bg-gray-700 text-white border border-gray-600 rounded px-2 py-1" 
-                    data-total-id="{{ total.s_no }}" 
-                    value="{{ total.total_qty_actual|default_if_none:'0' }}"
-                    min="0">
-                </td>
-                <td class="p-3">
-                    <a href="{% url 'production_plan_total_detail' total.pk %}" class="text-blue-400 hover:text-blue-300">View</a>
-                </td>
+                <td class="p-3 text-white">{{ total.unit__model }} {{total.unit_code}} </td>
+                <td class="p-3 text-white">{{ total.cumulative_planned }}</td>
+                <td class="p-3 text-white">{{ total.cumulative_actual }}</td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="5" class="p-3 text-center text-white">No production plans found.</td>
+                <td colspan="3" class="p-3 text-center text-white">No data available for the selected date range.</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 </div>
+
 
 {% if is_paginated %}
 <div class="mt-4">

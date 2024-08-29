@@ -1,0 +1,226 @@
+# models.py
+from django.db import models
+from django.contrib.auth.models import User
+from django.urls import reverse
+
+class Unit(models.Model):
+    code = models.CharField(max_length=20, unique=True)
+    model = models.CharField(max_length=100)
+
+    def __str__(self):
+        return f"{self.code} - {self.model}"
+
+class UnitMedia(models.Model):
+    unit = models.ForeignKey(Unit, related_name='media', on_delete=models.CASCADE)
+    file = models.FileField(upload_to='unit_media/')
+
+    def __str__(self):
+        return f"{self.unit.code} - {self.file.name}"
+
+class Station(models.Model):
+    name = models.CharField(max_length=100)
+    units = models.ManyToManyField(Unit, related_name='stations')
+    manager = models.ForeignKey(User, on_delete=models.CASCADE)
+    content = models.TextField(blank=True)
+
+    def __str__(self):
+        return self.name
+
+    def get_absolute_url(self):
+        return reverse('station_detail', kwargs={'pk': self.pk})
+
+# views.py
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
+from django.urls import reverse_lazy
+from django.shortcuts import render
+from django.http import JsonResponse
+from .models import Station, Unit, UnitMedia
+from .forms import StationForm
+
+class StationListView(ListView):
+    model = Station
+    template_name = 'station_list.html'
+    context_object_name = 'stations'
+
+class StationDetailView(DetailView):
+    model = Station
+    template_name = 'station_detail.html'
+    context_object_name = 'station'
+
+class StationCreateView(CreateView):
+    model = Station
+    form_class = StationForm
+    template_name = 'station_form.html'
+
+class StationUpdateView(UpdateView):
+    model = Station
+    form_class = StationForm
+    template_name = 'station_form.html'
+
+class StationDeleteView(DeleteView):
+    model = Station
+    template_name = 'station_confirm_delete.html'
+    success_url = reverse_lazy('station_list')
+
+def get_unit_media(request):
+    unit_ids = request.GET.getlist('units[]')
+    media = UnitMedia.objects.filter(unit__id__in=unit_ids)
+    media_data = [{'url': m.file.url, 'type': m.file.name.split('.')[-1].lower()} for m in media]
+    return JsonResponse({'media': media_data})
+
+# forms.py
+from django import forms
+from .models import Station
+
+class StationForm(forms.ModelForm):
+    class Meta:
+        model = Station
+        fields = ['name', 'units', 'manager', 'content']
+        widgets = {
+            'units': forms.CheckboxSelectMultiple(),
+        }
+
+# urls.py
+from django.urls import path
+from .views import (
+    StationListView, StationDetailView, StationCreateView,
+    StationUpdateView, StationDeleteView, get_unit_media
+)
+
+urlpatterns = [
+    path('stations/', StationListView.as_view(), name='station_list'),
+    path('stations/<int:pk>/', StationDetailView.as_view(), name='station_detail'),
+    path('stations/new/', StationCreateView.as_view(), name='station_create'),
+    path('stations/<int:pk>/edit/', StationUpdateView.as_view(), name='station_update'),
+    path('stations/<int:pk>/delete/', StationDeleteView.as_view(), name='station_delete'),
+    path('get-unit-media/', get_unit_media, name='get_unit_media'),
+]
+
+# Templates
+
+# station_list.html
+{% extends 'base.html' %}
+
+{% block content %}
+  <h1>Stations</h1>
+  <a href="{% url 'station_create' %}">Create New Station</a>
+  <ul>
+    {% for station in stations %}
+      <li>
+        <a href="{% url 'station_detail' station.pk %}">{{ station.name }}</a>
+        <a href="{% url 'station_update' station.pk %}">Edit</a>
+        <a href="{% url 'station_delete' station.pk %}">Delete</a>
+      </li>
+    {% endfor %}
+  </ul>
+{% endblock %}
+
+# station_detail.html
+{% extends 'base.html' %}
+
+{% block content %}
+  <h1>{{ station.name }}</h1>
+  <p>Manager: {{ station.manager }}</p>
+  <h2>Units:</h2>
+  <ul>
+    {% for unit in station.units.all %}
+      <li>{{ unit.code }} - {{ unit.model }}</li>
+    {% endfor %}
+  </ul>
+  <h2>Content:</h2>
+  <p>{{ station.content }}</p>
+  <h2>Media:</h2>
+  <div id="media-container"></div>
+  <a href="{% url 'station_update' station.pk %}">Edit</a>
+  <a href="{% url 'station_delete' station.pk %}">Delete</a>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var unitIds = [{% for unit in station.units.all %}{{ unit.id }}{% if not forloop.last %},{% endif %}{% endfor %}];
+    fetch('/get-unit-media/?units=' + unitIds.join('&units='))
+        .then(response => response.json())
+        .then(data => {
+            var mediaContainer = document.getElementById('media-container');
+            data.media.forEach(function(media) {
+                if (['jpg', 'jpeg', 'png', 'gif'].includes(media.type)) {
+                    var img = document.createElement('img');
+                    img.src = media.url;
+                    img.style.maxWidth = '200px';
+                    img.style.maxHeight = '200px';
+                    mediaContainer.appendChild(img);
+                } else if (['mp4', 'mov', 'avi'].includes(media.type)) {
+                    var video = document.createElement('video');
+                    video.src = media.url;
+                    video.controls = true;
+                    video.style.maxWidth = '200px';
+                    video.style.maxHeight = '200px';
+                    mediaContainer.appendChild(video);
+                }
+            });
+        });
+});
+</script>
+{% endblock %}
+
+# station_form.html
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+  <h1>{% if form.instance.pk %}Edit{% else %}Create{% endif %} Station</h1>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <div id="media-preview"></div>
+    <button type="submit">Save</button>
+  </form>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/jquery.min.js' %}"></script>
+<script>
+$(document).ready(function() {
+    function updateMediaPreview() {
+        var selectedUnits = $('#id_units').val();
+        if (selectedUnits) {
+            $.ajax({
+                url: '{% url "get_unit_media" %}',
+                data: {
+                    'units[]': selectedUnits
+                },
+                dataType: 'json',
+                success: function(data) {
+                    var mediaPreview = $('#media-preview');
+                    mediaPreview.empty();
+                    data.media.forEach(function(media) {
+                        if (['jpg', 'jpeg', 'png', 'gif'].includes(media.type)) {
+                            mediaPreview.append('<img src="' + media.url + '" style="max-width: 200px; max-height: 200px;">');
+                        } else if (['mp4', 'mov', 'avi'].includes(media.type)) {
+                            mediaPreview.append('<video src="' + media.url + '" controls style="max-width: 200px; max-height: 200px;"></video>');
+                        }
+                    });
+                }
+            });
+        }
+    }
+
+    $('#id_units').change(updateMediaPreview);
+    updateMediaPreview();  // Call on page load for edit form
+});
+</script>
+{% endblock %}
+
+# station_confirm_delete.html
+{% extends 'base.html' %}
+
+{% block content %}
+  <h1>Delete Station</h1>
+  <p>Are you sure you want to delete "{{ object.name }}"?</p>
+  <form method="post">
+    {% csrf_token %}
+    <button type="submit">Confirm Delete</button>
+  </form>
+  <a href="{% url 'station_detail' object.pk %}">Cancel</a>
+{% endblock %}

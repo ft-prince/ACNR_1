@@ -30,3 +30,28 @@ class DailyPlan(models.Model):
 
     def __str__(self):
         return f"{self.date} - {self.unit}"  # Adjusted to use unit name instead of plan_type_display
+
+
+# -----------------------------------------
+# class DailyPlan(models.Model):
+#     weekly_plan = models.ForeignKey(WeeklyProductionPlan, on_delete=models.CASCADE)
+#     date = models.DateField()
+#     quantity = models.IntegerField(default=0, blank=True, null=True)
+#     unit = models.ForeignKey(Unit, on_delete=models.CASCADE)
+
+#     class Meta:
+#         verbose_name = "Daily plans for weekly production"
+
+#     def __str__(self):
+#         return f"{self.date} - {self.unit}"
+
+#     def save(self, *args, **kwargs):
+#         self.update_quantity()
+#         super().save(*args, **kwargs)
+
+#     def update_quantity(self):
+#         total_qty_actual = ProductionPlan.objects.filter(
+#             date=self.date,
+#             unit=self.unit
+#         ).aggregate(total=Sum('qty_actual'))['total'] or 0
+#         self.quantity = total_qty_actual

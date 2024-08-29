@@ -4,6 +4,10 @@ from .views import screen_slider
 # from .views import     weekly_data_list_view, weekly_data_create_view, weekly_data_update_view, weekly_data_delete_view
 from .views import update_actual_value
 from .views import export_production_plan_pdf, export_production_plan_to_excel,export_production_plan_total_pdf,export_production_plan_total_to_excel 
+from .views import (
+    StationListView, StationDetailView, StationCreateView,
+    StationUpdateView, StationDeleteView, get_unit_media
+)
 
 
 from .views import (
@@ -60,6 +64,17 @@ urlpatterns = [
     path('line/<int:assembly_line_number>/', views.assembly_line_production_linewise, name='assembly_line_production_linewise'),
     path('update-actual/<int:plan_id>/', views.update_actual_value, name='update_actual_value'),
     path('update-actual-total/<int:plan_id>/', views.update_daily_actual_value_total, name='update_actual_value_total'),
+
+
+# 
+    path('stations/', StationListView.as_view(), name='station_list'),
+    path('stations/<int:pk>/', StationDetailView.as_view(), name='station_detail'),
+    path('stations/new/', StationCreateView.as_view(), name='station_create'),
+    path('stations/<int:pk>/edit/', StationUpdateView.as_view(), name='station_update'),
+    path('stations/<int:pk>/delete/', StationDeleteView.as_view(), name='station_delete'),
+    path('get-unit-media/', get_unit_media, name='get_unit_media'),
+    path('station/<int:station_id>/media/', views.get_station_media, name='station_media'),
+    path('station/<int:station_id>/slider/', views.station_media_slider, name='station_media_slider'),
 
 
 # ----------------------------------------------------------------

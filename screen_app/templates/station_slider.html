@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Station Media Slider</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+        }
+        .slider-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            width: 100vw;
+            background-color: black;
+            position: relative;
+        }
+        .slider-container img, .slider-container video {
+            max-width: 100%;
+            max-height: 100%;
+            display: none;
+            position: absolute;
+        }
+        .slider-container img.active, .slider-container video.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="slider-container" id="slider-container">
+        <!-- Media content will be injected here via JavaScript -->
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var stationId = {{ station.id }};
+            var url = '/screen/station/' + stationId + '/media/';
+            var currentIndex = 0;
+            var mediaElements = [];
+            var slideshowTimer;
+
+            function playCurrentMedia() {
+                var currentMedia = mediaElements[currentIndex];
+                if (currentMedia.tagName === 'VIDEO') {
+                    currentMedia.play().catch(e => console.error("Error playing video:", e));
+                } else if (currentMedia.tagName === 'IMG') {
+                    // For images, set a timer to move to the next item after 30 seconds
+                    slideshowTimer = setTimeout(switchMedia, 30000);
+                }
+            }
+
+            function stopCurrentMedia() {
+                var currentMedia = mediaElements[currentIndex];
+                if (currentMedia.tagName === 'VIDEO') {
+                    currentMedia.pause();
+                    currentMedia.currentTime = 0;
+                } else if (currentMedia.tagName === 'IMG') {
+                    // Clear the timer if we're stopping an image display
+                    clearTimeout(slideshowTimer);
+                }
+            }
+
+            function switchMedia() {
+                stopCurrentMedia();
+                mediaElements[currentIndex].classList.remove('active');
+                currentIndex = (currentIndex + 1) % mediaElements.length;
+                mediaElements[currentIndex].classList.add('active');
+                playCurrentMedia();
+            }
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.media && data.media.length > 0) {
+                        var sliderContainer = document.getElementById('slider-container');
+
+                        data.media.forEach(function(media, index) {
+                            if (['jpg', 'jpeg', 'png', 'gif'].includes(media.type)) {
+                                var img = document.createElement('img');
+                                img.src = media.url;
+                                img.className = index === 0 ? 'active' : '';
+                                sliderContainer.appendChild(img);
+                                mediaElements.push(img);
+                            } else if (['mp4', 'mov', 'avi'].includes(media.type)) {
+                                var video = document.createElement('video');
+                                video.src = media.url;
+                                video.controls = false;
+                                video.loop = false;
+                                video.muted = true; // Muted for autoplay
+                                video.className = index === 0 ? 'active' : '';
+                                // Add event listener for video end
+                                video.addEventListener('ended', switchMedia);
+                                sliderContainer.appendChild(video);
+                                mediaElements.push(video);
+                            }
+                        });
+
+                        playCurrentMedia(); // Play the first media item
+                    } else {
+                        console.error('No media found for this station.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching media:', error);
+                });
+        });
+    </script>
+</body>
+</html>

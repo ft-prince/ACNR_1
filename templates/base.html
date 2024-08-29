@@ -128,31 +128,50 @@
                   >Videos</a
                 >
                 {% endcomment %}
+
                 <a
-                  href="{% url 'production_plan_list' %}"
-                  class="nav-link {% if 'production_plan' in request.path %}nav-link-active{% else %}nav-link-inactive{% endif %}"
-                  >Total Plans</a
+                  href="{% url 'station_list' %}"
+                  class="nav-link "
+                  >Stations 1,2,3 </a
                 >
                 <a
                   href="{% url 'production_plan_list_linewise' %}"
                   class="nav-link {% if 'linewise' in request.path %}nav-link-active{% else %}nav-link-inactive{% endif %}"
                   >Linewise Plans</a
                 >
-                <a
+                {% comment %} <a
                   href="{% url 'weekly_production_plan_list' %}"
                   class="nav-link "
                   >Weekly Plans</a
-                >
-                <a
+                > {% endcomment %}
+                {% comment %} <a
                   href="{% url 'screen_list' %}"
                   class="nav-link "
                   >Screen 1,2,3 list</a
+                > {% endcomment %}
+
+                <a
+                  href="{%url 'production_plan_total_list' %}"
+                  class="nav-link "
+                  > Total </a
                 >
                 <a
-                  href="{% url 'production_plan_total_list' %}"
+                  href='/screen/station/1/slider'
                   class="nav-link "
-                  >Total automatically</a
+                  > screen 1 slider </a
                 >
+
+                <a
+                href='/screen/auto'
+                class="nav-link "
+                  >Total show </a
+                >
+                <a
+ href='/screen/line/1'
+                class="nav-link "
+                  >linewise show </a
+                >
+
               </div>
             </div>
           </div>

@@ -1,10 +1,10 @@
 from django import forms
-from .models import Screen, PDFFile, VideoFile
+from .models import Screen, PDFFile, VideoFile,Station
 
 class ScreenForm(forms.ModelForm):
     class Meta:
         model = Screen
-        fields = ['manager', 'product', 'upload_video','upload_images']
+        fields = ['manager', 'upload_video','upload_images']
         widgets = {
             'upload_video': forms.CheckboxSelectMultiple(),
             'upload_images': forms.CheckboxSelectMultiple(),
@@ -20,6 +20,13 @@ class VideoFileForm(forms.ModelForm):
         model = VideoFile
         fields = ['video_duration', 'video_name', 'video_file']
 
+class StationForm(forms.ModelForm):
+    class Meta:
+        model = Station
+        fields = ['name', 'units', 'manager', 'content']
+        widgets = {
+            'units': forms.CheckboxSelectMultiple(),
+        }
 
 # ---------------------------------------------------------------
 

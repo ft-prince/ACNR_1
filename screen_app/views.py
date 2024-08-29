@@ -18,6 +18,88 @@ def home(request):
 
 staff_member_required_cbv = method_decorator(staff_member_required, name='dispatch')
 
+
+
+
+
+
+# --------------------------------------------------    
+from .models import Station, Unit, UnitMedia
+from .forms import StationForm
+
+
+
+class StationListView(ListView):
+    model = Station
+    template_name = 'station_list.html'
+    context_object_name = 'stations'
+
+class StationDetailView(DetailView):
+    model = Station
+    template_name = 'station_detail.html'
+    context_object_name = 'station'
+
+class StationCreateView(CreateView):
+    model = Station
+    form_class = StationForm
+    template_name = 'station_form.html'
+
+class StationUpdateView(UpdateView):
+    model = Station
+    form_class = StationForm
+    template_name = 'station_form.html'
+
+class StationDeleteView(DeleteView):
+    model = Station
+    template_name = 'station_confirm_delete.html'
+    success_url = reverse_lazy('station_list')
+
+def get_unit_media(request):
+    unit_ids = request.GET.getlist('units[]')
+    media = UnitMedia.objects.filter(unit__id__in=unit_ids)
+    print(media,unit_ids)
+    media_data = [{'url': m.file.url, 'type': m.file.name.split('.')[-1].lower()} for m in media]
+    return JsonResponse({'media': media_data})
+
+
+
+
+
+def get_station_media(request, station_id):
+    # Retrieve the station object
+    station = Station.objects.get(pk=station_id)
+    
+    # Get all units connected to this station
+    units = station.units.all()
+
+    # Get all media files associated with these units
+    media = UnitMedia.objects.filter(unit__in=units)
+    
+    # # Optional: Print for debugging
+    # print(f"Units associated with station '{station.name}': {[unit.code for unit in units]}")
+    # print(f"Media files associated with these units: {[m.file.url for m in media]}")
+    
+    # Prepare media data for response
+    media_data = [{'url': m.file.url, 'type': m.file.name.split('.')[-1].lower()} for m in media]
+
+    # Return media data as JSON response
+    return JsonResponse({'media': media_data})
+
+
+
+
+
+
+
+def station_media_slider(request, station_id):
+    # Fetch the station object based on the station_id
+    station = get_object_or_404(Station, pk=station_id)
+
+    # Render the slider template
+    return render(request, 'station_slider.html', {'station': station})
+
+
+
 # Screen views
 @staff_member_required_cbv
 class ScreenListView(ListView):
@@ -762,12 +844,12 @@ def assembly_line_production_linewise(request, assembly_line_number):
 
 
 # ----------------------------------------------------------------
-from django.http import HttpResponse
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter, landscape
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
 from reportlab.lib.styles import getSampleStyleSheet
 from io import BytesIO
+from django.http import HttpResponse
 from .models import ProductionPlan
 from datetime import datetime
 
@@ -801,15 +883,26 @@ def export_production_plan_pdf(request):
     elements.append(title)
 
     # Create table data
-    data = [['Date', 'Unit Code', 'Unit Model', 'Assembly Line', 'Planned Qty', 'Actual Qty']]
+    data = [['Date', 'Unit Code', 'Unit Model', 'Assembly Line', 'Planned Qty', 'Actual Qty', 'Remarks']]
     for plan in queryset:
+        # Generate remark (status)
+        if plan.qty_actual == 0:
+            remark = "Pending"
+        elif plan.qty_actual < plan.qty_planned:
+            remark = "In-Prog."
+        elif plan.qty_actual >= plan.qty_planned:
+            remark = "Completed"
+        else:
+            remark = ""  # Fallback for any unexpected scenarios
+
         data.append([
             plan.date.strftime("%Y-%m-%d"),
             plan.unit.code,
             plan.unit.model,
             plan.assembly_line.name,
             str(plan.qty_planned),
-            str(plan.qty_actual)
+            str(plan.qty_actual),
+            remark
         ])
 
     # Create table
@@ -843,7 +936,10 @@ def export_production_plan_pdf(request):
     # FileResponse sets the Content-Disposition header so that browsers
     # present the option to save the file.
     buffer.seek(0)
-    return HttpResponse(buffer, content_type='application/pdf')
+    response = HttpResponse(buffer, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="linewise_Production_Plan{date}.pdf"'
+    
+    return response
 
 import pandas as pd
 from django.http import HttpResponse
@@ -871,11 +967,29 @@ def export_production_plan_to_excel(request):
         queryset = queryset.filter(assembly_line__name=assembly_line)
 
     # Convert to DataFrame
-    data = list(queryset.values('date', 'unit__code', 'unit__model', 'assembly_line__name', 'qty_planned', 'qty_actual'))
-    df = pd.DataFrame(data)
+    data = []
+    for plan in queryset:
+        # Generate remark (status)
+        if plan.qty_actual == 0:
+            remark = "Pending"
+        elif plan.qty_actual < plan.qty_planned:
+            remark = "In-Prog."
+        elif plan.qty_actual >= plan.qty_planned:
+            remark = "Completed"
+        else:
+            remark = ""  # Fallback for any unexpected scenarios
 
-    # Rename columns for better readability
-    df.columns = ['Date', 'Unit Code', 'Unit Model', 'Assembly Line', 'Planned Qty', 'Actual Qty']
+        data.append({
+            'Date': plan.date,
+            'Unit Code': plan.unit.code,
+            'Unit Model': plan.unit.model,
+            'Assembly Line': plan.assembly_line.name,
+            'Planned Qty': plan.qty_planned,
+            'Actual Qty': plan.qty_actual,
+            'Remarks': remark
+        })
+
+    df = pd.DataFrame(data)
 
     # Create a Pandas Excel writer using XlsxWriter as the engine
     buffer = BytesIO()
@@ -914,6 +1028,7 @@ def export_production_plan_to_excel(request):
         worksheet.set_column(3, 3, 20)  # Assembly Line
         worksheet.set_column(4, 4, 15)  # Planned Qty
         worksheet.set_column(5, 5, 15)  # Actual Qty
+        worksheet.set_column(6, 6, 15)  # Remarks
 
         # Add borders to all cells
         border_fmt = workbook.add_format({'border': 1})
@@ -1412,6 +1527,10 @@ from .forms import ProductionPlanTotalForm
 from datetime import datetime, timedelta
 from django.db.models import Q
 
+from django.db.models import Sum, F
+from django.utils.dateparse import parse_date
+from django.db.models.functions import Coalesce
+
 class ProductionPlanTotalListView(ListView):
     model = ProductionPlanTotal
     template_name = 'total_auto/production_plan_total_list.html'
@@ -1420,47 +1539,50 @@ class ProductionPlanTotalListView(ListView):
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        date = self.request.GET.get('date')
+        start_date = self.request.GET.get('start_date')
+        end_date = self.request.GET.get('end_date')
 
-        if date:
-            try:
-                date = datetime.strptime(date, "%Y-%m-%d").date()
-            except ValueError:
-                date = datetime.today().date()
+        if start_date and end_date:
+            start_date = parse_date(start_date)
+            end_date = parse_date(end_date)
+            if start_date and end_date:
+                queryset = queryset.filter(date__range=[start_date, end_date])
         else:
-            date = datetime.today().date()
-
-        queryset = queryset.filter(date=date)
+            today = datetime.today().date()
+            queryset = queryset.filter(date=today)
+            start_date = end_date = today
 
         unit = self.request.GET.get('unit')
         if unit:
             queryset = queryset.filter(unit__model=unit)
 
-        return queryset
+        # Calculate cumulative totals for each unit
+        cumulative_totals = queryset.values('unit__model').annotate(
+            cumulative_planned=Sum('total_qty_planned'),
+            cumulative_actual=Sum('total_qty_actual')
+        ).order_by('unit__model')
+
+        return queryset, cumulative_totals, start_date, end_date
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        units = Unit.objects.all()
-        context['units'] = units
+        queryset, cumulative_totals, start_date, end_date = self.get_queryset()
+        context['totals'] = queryset
+        context['cumulative_totals'] = cumulative_totals
+        context['start_date'] = start_date
+        context['end_date'] = end_date
+        context['units'] = Unit.objects.all()
 
-        date_str = self.request.GET.get('date')
-        if date_str:
-            try:
-                current_date = datetime.strptime(date_str, "%Y-%m-%d").date()
-            except ValueError:
-                current_date = datetime.today().date()
-        else:
-            current_date = datetime.today().date()
+        # Calculate overall totals
+        overall_totals = cumulative_totals.aggregate(
+            total_planned=Coalesce(Sum('cumulative_planned'), 0),
+            total_actual=Coalesce(Sum('cumulative_actual'), 0)
+        )
+        context['total_planned'] = overall_totals['total_planned']
+        context['total_actual'] = overall_totals['total_actual']
 
-        previous_date = current_date - timedelta(days=1)
-        next_date = current_date + timedelta(days=1)
-
-        context['current_date'] = current_date.strftime("%Y-%m-%d")
-        context['previous_date'] = previous_date.strftime("%Y-%m-%d")
-        context['next_date'] = next_date.strftime("%Y-%m-%d")
-
-        return context
-
+        return context    
+    
 class ProductionPlanTotalDetailView(DetailView):
     model = ProductionPlanTotal
     template_name = 'total_auto/production_plan_total_detail.html'
@@ -1655,91 +1777,6 @@ def update_production_plan_total_actual_value2(request,pk):
 # # 
 
 import pandas as pd
-from django.http import HttpResponse
-from .models import ProductionPlanTotal
-from datetime import datetime
-from io import BytesIO
-
-def export_production_plan_total_to_excel_auto(request):
-    # Filter the ProductionPlanTotal queryset
-    queryset = ProductionPlanTotal.objects.all()
-    date = request.GET.get('date')
-
-    if date:
-        try:
-            date = datetime.strptime(date, "%Y-%m-%d").date()
-        except ValueError:
-            date = datetime.today().date()
-    else:
-        date = datetime.today().date()
-
-    queryset = queryset.filter(date=date)
-
-    unit = request.GET.get('unit')
-    if unit:
-        queryset = queryset.filter(unit__code=unit)
-
-    # Convert to DataFrame
-    data = list(queryset.values('date', 'unit__code', 'unit__model', 'total_qty_planned', 'total_qty_actual'))
-    df = pd.DataFrame(data)
-
-    # Rename columns for better readability
-    df.columns = ['Date', 'Unit Code', 'Unit Model', 'Total Planned Qty', 'Total Actual Qty']
-
-    # Create a Pandas Excel writer using XlsxWriter as the engine
-    buffer = BytesIO()
-    with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
-        # Write the dataframe to the worksheet
-        df.to_excel(writer, sheet_name='Production Plan Total', index=False, startrow=1)
-
-        # Get the xlsxwriter workbook and worksheet objects
-        workbook = writer.book
-        worksheet = writer.sheets['Production Plan Total']
-
-        # Add a title
-        title = f"Production Plan Total - {date} "
-        worksheet.write(0, 0, title, workbook.add_format({'bold': True, 'font_size': 16}))
-
-        # Get the dimensions of the dataframe
-        (max_row, max_col) = df.shape
-
-        # Create a format for the header row
-        header_format = workbook.add_format({
-            'bold': True,
-            'text_wrap': True,
-            'valign': 'top',
-            'fg_color': '#D7E4BC',
-            'border': 1
-        })
-
-        # Write the column headers with the defined format
-        for col_num, value in enumerate(df.columns.values):
-            worksheet.write(1, col_num, value, header_format)
-
-        # Set the column width and format
-        worksheet.set_column(0, 0, 15)  # Date
-        worksheet.set_column(1, 1, 15)  # Unit Code
-        worksheet.set_column(2, 2, 20)  # Unit Model
-        worksheet.set_column(3, 3, 20)  # Total Planned Qty
-        worksheet.set_column(4, 4, 20)  # Total Actual Qty
-
-        # Add borders to all cells
-        border_fmt = workbook.add_format({'border': 1})
-        worksheet.conditional_format(1, 0, max_row+1, max_col-1, {'type': 'no_errors', 'format': border_fmt})
-
-    # Create the HttpResponse object with Excel content
-    buffer.seek(0)
-    response = HttpResponse(buffer.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = f'attachment; filename="production_plan_total_{date}.xlsx"'
-
-    return response
-
-
-
-
-
-
-
 from io import BytesIO
 from django.http import HttpResponse
 from reportlab.lib.pagesizes import letter, landscape
@@ -1748,25 +1785,120 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
 from .models import ProductionPlanTotal
 from datetime import datetime
+from django.utils.dateparse import parse_date
+from django.db.models import Sum
+
+import pandas as pd
+from io import BytesIO
+from django.http import HttpResponse
+from datetime import datetime
+from django.utils.dateparse import parse_date
+from django.db.models import Sum
+
+def export_production_plan_total_to_excel_auto(request):
+    # Filter the ProductionPlanTotal queryset
+    queryset = ProductionPlanTotal.objects.all()
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+
+    if start_date and end_date:
+        start_date = parse_date(start_date)
+        end_date = parse_date(end_date)
+        if start_date and end_date:
+            queryset = queryset.filter(date__range=[start_date, end_date])
+    else:
+        start_date = end_date = datetime.today().date()
+        queryset = queryset.filter(date=start_date)
+
+    unit = request.GET.get('unit')
+    if unit:
+        queryset = queryset.filter(unit__model=unit)
+
+    # Calculate cumulative totals
+    cumulative_totals = queryset.values('unit__model').annotate(
+        cumulative_planned=Sum('total_qty_planned'),
+        cumulative_actual=Sum('total_qty_actual')
+    ).order_by('unit__model')
+
+    # Convert to DataFrame
+    data = list(queryset.values('date', 'unit__model', 'total_qty_planned', 'total_qty_actual'))
+    df = pd.DataFrame(data)
+    df.columns = ['Date', 'Unit Model', 'Daily Planned Qty', 'Daily Actual Qty']
+
+    # Create cumulative totals DataFrame
+    cumulative_df = pd.DataFrame(list(cumulative_totals))
+    cumulative_df.columns = ['Unit Model', 'Cumulative Planned Qty', 'Cumulative Actual Qty']
+
+    # Create a Pandas Excel writer using XlsxWriter as the engine
+    buffer = BytesIO()
+    with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+        # Write the daily data to the worksheet
+        df.to_excel(writer, sheet_name='Daily Data', index=False, startrow=1)
+
+        # Write the cumulative totals to another worksheet
+        cumulative_df.to_excel(writer, sheet_name='Cumulative Totals', index=False, startrow=1)
+
+        # Get the xlsxwriter workbook and worksheet objects
+        workbook = writer.book
+        daily_worksheet = writer.sheets['Daily Data']
+        cumulative_worksheet = writer.sheets['Cumulative Totals']
+
+        # Add titles
+        title_format = workbook.add_format({'bold': True, 'font_size': 16})
+        daily_worksheet.write(0, 0, f"Production Plan Daily Data - {start_date} to {end_date}", title_format)
+        cumulative_worksheet.write(0, 0, f"Production Plan Cumulative Totals - {start_date} to {end_date}", title_format)
+
+        # Format headers and set column widths for both worksheets
+        header_format = workbook.add_format({
+            'bold': True,
+            'text_wrap': True,
+            'valign': 'top',
+            'fg_color': '#D7E4BC',
+            'border': 1
+        })
+
+        for worksheet, dataframe in [(daily_worksheet, df), (cumulative_worksheet, cumulative_df)]:
+            for col_num, value in enumerate(dataframe.columns):
+                worksheet.write(1, col_num, value, header_format)
+                worksheet.set_column(col_num, col_num, 20)
+
+        # Add borders to all cells
+        border_fmt = workbook.add_format({'border': 1})
+        for worksheet in [daily_worksheet, cumulative_worksheet]:
+            worksheet.conditional_format(1, 0, worksheet.dim_rowmax, worksheet.dim_colmax,
+                                         {'type': 'no_errors', 'format': border_fmt})
+
+    # Create the HttpResponse object with Excel content
+    buffer.seek(0)
+    response = HttpResponse(buffer.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename="production_plan_total_{start_date}_to_{end_date}.xlsx"'
+
+    return response
 
 def export_production_plan_total_pdf_auto(request):
     # Filter the ProductionPlanTotal queryset
     queryset = ProductionPlanTotal.objects.all()
-    date = request.GET.get('date')
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
 
-    if date:
-        try:
-            date = datetime.strptime(date, "%Y-%m-%d").date()
-        except ValueError:
-            date = datetime.today().date()
+    if start_date and end_date:
+        start_date = parse_date(start_date)
+        end_date = parse_date(end_date)
+        if start_date and end_date:
+            queryset = queryset.filter(date__range=[start_date, end_date])
     else:
-        date = datetime.today().date()
-
-    queryset = queryset.filter(date=date)
+        start_date = end_date = datetime.today().date()
+        queryset = queryset.filter(date=start_date)
 
     unit = request.GET.get('unit')
     if unit:
-        queryset = queryset.filter(unit__code=unit)
+        queryset = queryset.filter(unit__model=unit)
+
+    # Calculate cumulative totals
+    cumulative_totals = queryset.values('unit__model').annotate(
+        cumulative_planned=Sum('total_qty_planned'),
+        cumulative_actual=Sum('total_qty_actual')
+    ).order_by('unit__model')
 
     # Create the HttpResponse object with PDF headers
     buffer = BytesIO()
@@ -1775,24 +1907,33 @@ def export_production_plan_total_pdf_auto(request):
 
     # Add title
     styles = getSampleStyleSheet()
-    title = Paragraph(f"Production Plan Total - {date}", styles['Title'])
+    title = Paragraph(f"Production Plan Total - {start_date} to {end_date}", styles['Title'])
     elements.append(title)
 
-    # Create table data
-    data = [['Date', 'Unit Code', 'Unit Model', 'Total Planned Qty', 'Total Actual Qty']]
+    # Create daily data table
+    daily_data = [['Date', 'Unit Model', 'Daily Planned Qty', 'Daily Actual Qty']]
     for plan in queryset:
-        data.append([
+        daily_data.append([
             plan.date.strftime("%Y-%m-%d"),
-            plan.unit.code,
             plan.unit.model,
             str(plan.total_qty_planned),
             str(plan.total_qty_actual)
         ])
 
-    # Create table
-    table = Table(data)
+    # Create cumulative totals table
+    cumulative_data = [['Unit Model', 'Cumulative Planned Qty', 'Cumulative Actual Qty']]
+    for total in cumulative_totals:
+        cumulative_data.append([
+            total['unit__model'],
+            str(total['cumulative_planned']),
+            str(total['cumulative_actual'])
+        ])
 
-    # Add style to table
+    # Create tables
+    daily_table = Table(daily_data)
+    cumulative_table = Table(cumulative_data)
+
+    # Add style to tables
     style = TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
@@ -1809,10 +1950,14 @@ def export_production_plan_total_pdf_auto(request):
         ('BOTTOMPADDING', (0, 1), (-1, -1), 6),
         ('GRID', (0, 0), (-1, -1), 1, colors.black)
     ])
-    table.setStyle(style)
+    daily_table.setStyle(style)
+    cumulative_table.setStyle(style)
 
-    # Add table to elements
-    elements.append(table)
+    # Add tables to elements
+    elements.append(Paragraph("Daily Data", styles['Heading2']))
+    elements.append(daily_table)
+    elements.append(Paragraph("Cumulative Totals", styles['Heading2']))
+    elements.append(cumulative_table)
 
     # Build PDF
     doc.build(elements)
@@ -1820,4 +1965,6 @@ def export_production_plan_total_pdf_auto(request):
     # FileResponse sets the Content-Disposition header so that browsers
     # present the option to save the file.
     buffer.seek(0)
-    return HttpResponse(buffer, content_type='application/pdf')
+    response = HttpResponse(buffer, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="production_plan_total_{start_date}_to_{end_date}.pdf"'
+    return response
