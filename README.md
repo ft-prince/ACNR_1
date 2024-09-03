@@ -47,11 +47,11 @@ This project is a Django-based application for managing and analyzing production
    python manage.py runserver
    ```
 
-2. Access the application at `http://localhost:8000`
+2. Access the application at `http://localhost:8000/screen`
 
-3. Log in with your superuser credentials to access the admin panel and manage data.
+4. Log in with your superuser credentials to access the admin panel and manage data.
 
-4. Use the main interface to view production plans, filter data, and generate reports.
+5. Use the main interface to view production plans, filter data, and generate reports.
 
 ## Exporting Data
 
