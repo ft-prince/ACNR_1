@@ -84,9 +84,4 @@ This project is a Django-based application for managing and analyzing production
 ## Contact
 
 Renata Iot
-Project Link: [[https://github.com/your-username/production-plan-total](https://github.com/your-username/production-plan-total)](https://github.com/ft-prince/ACNR_1)
-
-
-
-
-## Demo
+Project Link: (https://github.com/ft-prince/ACNR_1)
