@@ -7,6 +7,7 @@ from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 import os
 import zipfile
+from .models import Unit, UnitMedia, Station
 
 # Register your models here.
 from .models import Images
@@ -98,25 +99,40 @@ class UnitMediaAdmin(admin.ModelAdmin):
             self.message_user(request, 'Zip file contents uploaded successfully!')
 
 
-# @admin.register(Unit)
-# class UnitAdmin(admin.ModelAdmin):
-#     list_display = ('code', 'model')
+
+class StationAdminForm(forms.ModelForm):
+    class Meta:
+        model = Station
+        fields = ['name', 'units', 'manager', 'selected_media']
+        widgets = {
+            'selected_media': forms.CheckboxSelectMultiple,  # Allow selecting multiple media files
+        }
+
+    def __init__(self, *args, **kwargs):
+        super(StationAdminForm, self).__init__(*args, **kwargs)
+        if self.instance and self.instance.pk:
+            # If the station instance exists, filter selected_media by units linked to this station
+            self.fields['selected_media'].queryset = UnitMedia.objects.filter(unit__in=self.instance.units.all())
+        else:
+            # If no station instance, show no media files initially
+            self.fields['selected_media'].queryset = UnitMedia.objects.none()
 
 @admin.register(Station)
 class StationAdmin(admin.ModelAdmin):
+    form = StationAdminForm
     list_display = ('name', 'manager', 'unit_count', 'image_count')
-    filter_horizontal = ('units',)
+    filter_horizontal = ('units', 'selected_media')  # Allow selecting multiple units and media
 
     def unit_count(self, obj):
         return obj.units.count()
     unit_count.short_description = 'Number of Units'
 
     def image_count(self, obj):
-        return UnitMedia.objects.filter(unit__stations=obj).count()
-    image_count.short_description = 'Number of Images'
+        return obj.selected_media.count()
+    image_count.short_description = 'Number of Selected Images'
 
     def get_readonly_fields(self, request, obj=None):
-        if obj:  # editing an existing object
+        if obj:  # Editing an existing object
             return self.readonly_fields + ('unit_count', 'image_count')
         return self.readonly_fields
 
@@ -124,7 +140,8 @@ class StationAdmin(admin.ModelAdmin):
         extra_context = extra_context or {}
         station = self.get_object(request, object_id)
         if station:
-            unit_media = UnitMedia.objects.filter(unit__stations=station)
+            # Display all media associated with the units linked to this station
+            unit_media = UnitMedia.objects.filter(unit__in=station.units.all())
             extra_context['unit_media'] = unit_media
         return super().change_view(request, object_id, form_url, extra_context=extra_context)
 

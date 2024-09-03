@@ -1,5 +1,5 @@
 from django import forms
-from .models import Screen, PDFFile, VideoFile,Station
+from .models import Screen, PDFFile, UnitMedia, VideoFile,Station
 
 class ScreenForm(forms.ModelForm):
     class Meta:
@@ -23,11 +23,18 @@ class VideoFileForm(forms.ModelForm):
 class StationForm(forms.ModelForm):
     class Meta:
         model = Station
-        fields = ['name', 'units', 'manager', 'content']
+        fields = ['name', 'units', 'manager', 'selected_media']
         widgets = {
             'units': forms.CheckboxSelectMultiple(),
+            'selected_media': forms.CheckboxSelectMultiple(),
         }
 
+    def __init__(self, *args, **kwargs):
+        super(StationForm, self).__init__(*args, **kwargs)
+        if self.instance and self.instance.pk:
+            self.fields['selected_media'].queryset = UnitMedia.objects.filter(unit__in=self.instance.units.all())
+        else:
+            self.fields['selected_media'].queryset = UnitMedia.objects.none()
 # ---------------------------------------------------------------
 
 from django import forms

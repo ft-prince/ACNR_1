@@ -12,6 +12,7 @@
       rel="stylesheet" />
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <!-- Bootstrap JS and dependencies -->
     <style>
       body {
         background-color: #1a202c;
@@ -132,30 +133,35 @@
                 <a
                   href="{% url 'station_list' %}"
                   class="nav-link "
-                  >Stations 1,2,3 </a
+                  >Media</a
                 >
-                <a
+                {% comment %} <a
                   href="{% url 'production_plan_list_linewise' %}"
                   class="nav-link {% if 'linewise' in request.path %}nav-link-active{% else %}nav-link-inactive{% endif %}"
-                  >Linewise Plans</a
+                  >Plan</a
                 >
-                {% comment %} <a
-                  href="{% url 'weekly_production_plan_list' %}"
-                  class="nav-link "
-                  >Weekly Plans</a
-                > {% endcomment %}
-                {% comment %} <a
-                  href="{% url 'screen_list' %}"
-                  class="nav-link "
-                  >Screen 1,2,3 list</a
-                > {% endcomment %}
-
                 <a
                   href="{%url 'production_plan_total_list' %}"
                   class="nav-link "
-                  > Total </a
-                >
-                <a
+                  > Total Plan</a
+                > {% endcomment %}
+<!-- Dropdown Menu -->
+<div class="relative inline-block text-left">
+  <button type="button" class="inline-flex w-full  justify-center rounded-md border border-gray-300 bg-gray-50 px-4 py-1 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2" id="dropdownMenuButton" aria-expanded="false">
+    Plan
+    <svg class="-mr-1 ml-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+    </svg>
+  </button>
+
+  <div class="dropdown-menu absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none hidden" aria-labelledby="dropdownMenuButton">
+    <div class="p-1">
+      <a href="{% url 'production_plan_list_linewise' %}" class="block px-4 py-2 text-sm text-gray-700 {% if 'linewise' in request.path %}bg-gray-100{% endif %} hover:bg-gray-200">LineWise Plan</a>
+      <a href="{% url 'production_plan_total_list' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-200">Total Plan</a>
+    </div>
+  </div>
+</div>
+                {% comment %} <a
                   href='/screen/station/1/slider'
                   class="nav-link "
                   > screen 1 slider </a
@@ -165,12 +171,12 @@
                 href='/screen/auto'
                 class="nav-link "
                   >Total show </a
-                >
-                <a
+                > {% endcomment %}
+                {% comment %} <a
  href='/screen/line/1'
                 class="nav-link "
                   >linewise show </a
-                >
+                > {% endcomment %}
 
               </div>
             </div>
@@ -239,16 +245,28 @@
             class="nav-link block {% if 'video' in request.path %}nav-link-active{% else %}nav-link-inactive{% endif %}"
             >Videos</a
           > {% endcomment %}
+
           <a
-            href="{% url 'production_plan_list' %}"
-            class="nav-link block {% if 'production_plan' in request.path %}nav-link-active{% else %}nav-link-inactive{% endif %}"
-            >Production Plans</a
-          >
-          <a
-            href="{% url 'production_plan_list_linewise' %}"
-            class="nav-link block {% if 'linewise' in request.path %}nav-link-active{% else %}nav-link-inactive{% endif %}"
-            >Linewise Plans</a
-          >
+          href="{% url 'production_plan_list_linewise' %}"
+          class="nav-link block {% if 'linewise' in request.path %}nav-link-active{% else %}nav-link-inactive{% endif %}"
+          >Plan</a
+        >
+        {% comment %} <a
+          href="{% url 'weekly_production_plan_list' %}"
+          class="nav-link "
+          >Weekly Plans</a
+        > {% endcomment %}
+        {% comment %} <a
+          href="{% url 'screen_list' %}"
+          class="nav-link "
+          >Screen 1,2,3 list</a
+        > {% endcomment %}
+
+        <a
+          href="{%url 'production_plan_total_list' %}"
+          class="nav-link block "
+          > Total Plan</a
+        >
         </div>
       </div>
     </nav>
@@ -277,6 +295,20 @@
           .querySelector("svg:nth-child(2)")
           .classList.toggle("hidden");
       });
+
+      const button = document.getElementById('dropdownMenuButton');
+      const menu = button.nextElementSibling;
+  
+      button.addEventListener('click', () => {
+        menu.classList.toggle('hidden');
+      });
+  
+      document.addEventListener('click', (event) => {
+        if (!button.contains(event.target) && !menu.contains(event.target)) {
+          menu.classList.add('hidden');
+        }
+      });
+  
     </script>
   </body>
 </html>

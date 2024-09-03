@@ -14,10 +14,14 @@
     </a> 
 
     <form method="get" class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-        <input type="date" name="start_date" value="{{ start_date|date:'d-m-Y' }}" 
+        <label for="start_date" class="text-white font-bold ">Start Date:</label>
+        <input type="date" id="start_date" name="start_date" value="{{ start_date|date:'Y-m-d' }}" 
                class="bg-gray-700 text-white border border-gray-600 rounded px-2 py-1 focus:outline-none focus:border-blue-500">
-        <input type="date" name="end_date" value="{{ end_date|date:'d-m-Y' }}" 
+        
+        <label for="end_date" class="text-white font-bold ">End Date:</label>
+        <input type="date" id="end_date" name="end_date" value="{{ end_date|date:'Y-m-d' }}" 
                class="bg-gray-700 text-white border border-gray-600 rounded px-2 py-1 focus:outline-none focus:border-blue-500">
+    
         <select name="unit" 
                 class="bg-gray-700 text-white border border-gray-600 rounded px-2 py-1 focus:outline-none focus:border-blue-500">
             <option value="">All Units</option>
@@ -33,10 +37,25 @@
         <a href="{% url 'production_plan_total_list' %}" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-1 px-4 rounded">
             Reset
         </a>
-    </form>
+    </form>    
+</div>
+<div class='flex justify-center gap-10'>
+    <span class='m-4'> <strong>from &nbsp; </strong> {{ start_date|date:'d-m-Y' }}</span>
+    <span class='m-3 font-bold text-2xl'>to</span>
+    <span class='m-4'>{{ end_date|date:'d-m-Y'}}</span>
+    <span class=''></span>
+    <span class=''></span>
+    <span class=''></span>
+    <span class=''></span>
+    <span class=''></span>
+    <span class=''></span>
+    <span class=''></span>
+    <span class=''></span>
+    <span class=''></span>
+    
 </div>
 
-<div class="mb-4">
+{% comment %} <div class="mb-4">
     <span class="text-xl font-semibold py-2 px-4 text-white">
         Date Range: {{ start_date|date:'d-m-Y' }} to {{ end_date|date:'d-m-Y' }}
     </span>
@@ -49,7 +68,7 @@
     <span class="text-xl font-semibold py-2 px-4 text-white">
         Overall Total Actual: {{ total_actual }}
     </span>
-</div>
+</div> {% endcomment %}
 
 
 <div class="mb-4 flex justify-between">
@@ -58,10 +77,6 @@
         Previous Day
     </a>
 
-    <!-- Display the current date -->
-    <span class="text-xl font-semibold py-2 px-4">
-        Current Date: {{ current_date }}
-    </span>
 
     <a href="?date={{ next_date }}{% if request.GET.unit %}&unit={{ request.GET.unit }}{% endif %}" 
        class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
@@ -74,7 +89,8 @@
     <table class="w-full">
         <thead>
             <tr class="bg-gray-700">
-                <th class="p-3 text-left text-white">Unit</th>
+                <th class="p-3 text-left text-white">Model</th>
+                <th class="p-3 text-left text-white">Code</th>
                 <th class="p-3 text-left text-white">Total Planned</th>
                 <th class="p-3 text-left text-white">Total Actual</th>
             </tr>
@@ -82,8 +98,9 @@
         <tbody>
             {% for total in cumulative_totals %}
             <tr class="border-t border-gray-700">
-                <td class="p-3 text-white">{{ total.unit__model }} {{total.unit_code}} </td>
-                <td class="p-3 text-white">{{ total.cumulative_planned }}</td>
+                <td class="p-3 text-white ">{{total.unit__model}}</td>
+                <td class="p-3 text-white"> {{total.unit_code}}</td>
+                <td class="p-3 text-white ">{{ total.cumulative_planned }}</td>
                 <td class="p-3 text-white">{{ total.cumulative_actual }}</td>
             </tr>
             {% empty %}
@@ -117,6 +134,7 @@
 {% endif %}
 
 <script>
+    console.log(cumulative_totals)
     document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('.actual-input').forEach(input => {
             input.addEventListener('change', function() {

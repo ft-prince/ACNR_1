@@ -4,6 +4,9 @@ from django.http import JsonResponse
 from django.urls import reverse
 from django.utils import timezone
 from django.core.validators import FileExtensionValidator
+import os
+from django.core.files.base import ContentFile
+import zipfile
 
 
 class Product(models.Model): 
@@ -49,9 +52,24 @@ class UnitMedia(models.Model):
         upload_to='unit_media/',
         validators=[FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png', 'mp4', 'mov', 'zip'])]
     )
-    
+    duration = models.PositiveIntegerField(default=30,blank=True)  # Duration in seconds
+
     def __str__(self):
         return f"{self.unit.code} - {self.file.name}"
+
+
+
+class Station(models.Model):
+    name = models.CharField(max_length=100)
+    units = models.ManyToManyField(Unit, related_name='stations')
+    manager = models.ForeignKey(User, on_delete=models.CASCADE)
+    selected_media = models.ManyToManyField(UnitMedia, related_name='stations', blank=True)
+
+    def __str__(self):
+        return self.name
+
+    def get_absolute_url(self):
+        return reverse('station_detail', kwargs={'pk': self.pk})
 
 class PDFFile(models.Model):
     pdf_duration = models.IntegerField(default=20,help_text="Duration of pdf in seconds")
@@ -91,16 +109,6 @@ class Screen(models.Model):
     def __str__(self):
         return f"Screen {self.screen_id} at {self.manager} "
     
-class Station(models.Model):
-    name = models.CharField(max_length=100)
-    units = models.ManyToManyField(Unit, related_name='stations')
-    manager = models.ForeignKey(User, on_delete=models.CASCADE)
-    content = models.TextField(blank=True)
-
-    def __str__(self):
-        return self.name
-    def get_absolute_url(self):
-        return reverse('station_detail', kwargs={'pk': self.pk})
 
 
 class AssemblyLine(models.Model):
