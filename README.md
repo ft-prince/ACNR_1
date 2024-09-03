@@ -79,19 +79,7 @@ This project is a Django-based application for managing and analyzing production
 - `ProductionPlanTotalListView`: Displays a list of production plan totals with filtering options.
 - `export_production_plan_total_pdf_auto`: Generates a PDF report of production plan totals.
 - `export_production_plan_total_to_excel_auto`: Exports production plan totals to an Excel file.
-
-## Contributing
-
-If you'd like to contribute to this project, please follow these steps:
-
-1. Fork the repository
-2. Create a new branch (`git checkout -b feature/AmazingFeature`)
-3. Make your changes
-4. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-5. Push to the branch (`git push origin feature/AmazingFeature`)
-6. Open a Pull Request
-
-[Specify your license here, e.g., MIT, GPL, etc.]
+- `and much more`
 
 ## Contact
 
