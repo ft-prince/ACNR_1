@@ -138,7 +138,7 @@ class DailyProductionPlan(models.Model):
         ordering = ['date', 's_no']
 
 
-
+from django.utils.timezone import now
 # Daily Production Plan Vs Actual 
 class ProductionPlan(models.Model):
     s_no = models.AutoField(primary_key=True)    
@@ -149,12 +149,14 @@ class ProductionPlan(models.Model):
     qty_planned = models.IntegerField()
     qty_actual = models.IntegerField(default=0,blank=True)
     remarks = models.TextField(blank=True, null=True)
+    last_updated = models.DateTimeField(auto_now=True,blank=True)    
     def __str__(self):
         return f"{self.date} - {self.unit.model}"
     class Meta:
         verbose_name = "Daily Production Plan Vs Actual LineWise"
         verbose_name_plural = "Daily Production Plan Vs Actual Total LineWise"        
     def save(self, *args, **kwargs):
+        self.last_updated = now()
         super().save(*args, **kwargs)
         ProductionPlanTotal.update_or_create_total(self.date, self.unit)
 

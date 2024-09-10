@@ -50,6 +50,9 @@
     <span class="text-xl font-semibold py-2 px-4">
         Current Date: {{ current_date }}
     </span>
+    <span class="text-lg font-semibold py-2 px-4 text-gray-400">
+        Last Updated: {{ last_update_time }}
+    </span>
 
     <a href="?date={{ next_date }}{% if request.GET.assembly_line %}&assembly_line={{ request.GET.assembly_line }}{% endif %}" 
        class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">

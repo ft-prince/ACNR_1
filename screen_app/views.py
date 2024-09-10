@@ -682,6 +682,12 @@ class ProductionPlanListView(ListView):
         context['current_date'] = current_date.strftime("%d-%m-%Y")
         context['previous_date'] = previous_date.strftime("%Y-%m-%d")
         context['next_date'] = next_date.strftime("%Y-%m-%d")
+        # Add the latest 'last_updated' time to the context
+        latest_update = ProductionPlan.objects.filter(date=current_date).order_by('-last_updated').first()
+        if latest_update:
+            context['last_update_time'] = latest_update.last_updated.strftime("%I:%M:%S %p")
+        else:
+            context['last_update_time'] = 'No updates yet'
 
         return context
 
